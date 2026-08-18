@@ -63,6 +63,14 @@ ROOT_COLUMNS = ("root_meaning", "root_meaning_en")
 SANSKRIT_TABLE = "sanskrit_es"
 SANSKRIT_COLUMN = "meaning_es"
 
+# Las notas van por el mismo camino que las glosas sánscritas, y por las mismas
+# razones: 2.179 entradas comparten sólo 1.497 textos distintos, así que la
+# clave natural es la nota inglesa y no el lema. Además el inglés es a la vez
+# clave y huella: si upstream reescribe una nota, la traducción deja de casar y
+# vuelve el original, sin necesidad de comparar pos ni construcción.
+NOTES_TABLE = "notes_es"
+NOTES_COLUMN = "notes_es"
+
 # Webapp interface strings, keyed by the exact English as it appears in the
 # templates. Substitution happens when Jinja loads a template, so no template
 # is edited and upstream can keep churning them freely; a string that changes
@@ -74,6 +82,7 @@ _enabled: bool | None = None
 _translations: dict[str, dict[str, str]] | None = None
 _roots: dict[str, dict[str, str]] | None = None
 _sanskrit: dict[str, dict[str, str]] | None = None
+_notes: dict[str, dict[str, str]] | None = None
 _ui: dict[str, dict[str, str]] | None = None
 # lemma_1 -> its overlaid meaning_combo, memoised across family tables and
 # requests: the same lemmas recur in family after family, and re-querying
@@ -156,6 +165,14 @@ def load_sanskrit() -> dict[str, dict[str, str]]:
     return _sanskrit
 
 
+def load_notes() -> dict[str, dict[str, str]]:
+    """Load the note translations into memory, once."""
+    global _notes
+    if _notes is None:
+        _notes = _read_table(NOTES_TABLE, "notes_en", (NOTES_COLUMN,))
+    return _notes
+
+
 def load_ui() -> dict[str, dict[str, str]]:
     """Load the interface strings into memory, once."""
     global _ui
@@ -166,11 +183,12 @@ def load_ui() -> dict[str, dict[str, str]]:
 
 def reload() -> None:
     """Drop the cached config switch and translations."""
-    global _enabled, _translations, _roots, _sanskrit, _ui
+    global _enabled, _translations, _roots, _sanskrit, _notes, _ui
     _enabled = None
     _translations = None
     _roots = None
     _sanskrit = None
+    _notes = None
     _ui = None
     _combos.clear()
 
@@ -259,6 +277,20 @@ def overlay_sanskrit(english: str) -> str:
     if stored is None:
         return english
     return stored[SANSKRIT_COLUMN] or english
+
+
+def overlay_notes(english: str) -> str:
+    """Spanish for a headword's note, falling back to English.
+
+    Keyed by the English note itself, so a note reworded upstream simply misses
+    and keeps its English — the same guarantee `overlay_sanskrit` gets.
+    """
+    if not is_active() or not english:
+        return english
+    stored = load_notes().get(english)
+    if stored is None:
+        return english
+    return stored[NOTES_COLUMN] or english
 
 
 # Family tables are stored in `dpd.db` as HTML rendered at build time, so their
@@ -400,13 +432,127 @@ TEXT_ATTRIBUTE = re.compile(
     r"(?P<text>[^\"'{}]+)(?P=quote)"
 )
 
+# --- enlaces al proyecto original -------------------------------------------
+#
+# Las plantillas llevan pies de página que invitan a reportar errores y a pedir
+# palabras que faltan, y lo hacen a los formularios de Bodhirasa. En esta capa
+# eso no procede: quien la use estaría mandando erratas del español al proyecto
+# inglés, que no las puede atender. Se quitan al mismo tiempo que se traduce,
+# sin editar ninguna plantilla.
+
+# Cinco de los seis pies son un <p class="dpd-footer"> completo. Sólo se borran
+# si contienen un enlace a los formularios, para no llevarse por delante un pie
+# que algún día sirva para otra cosa, y sólo si no hay ninguna etiqueta de Jinja
+# dentro: el pie de las tablas de flexión abre el <p> dentro de un {% if %} y lo
+# cierra fuera, así que tragárselo entero descuadraría los condicionales.
+PIE_CON_FORMULARIO = re.compile(
+    r"[ \t]*<p class=[\"']dpd-footer[\"']>(?:(?!</p>|\{%).)*?docs\.google\.com"
+    r"(?:(?!</p>|\{%).)*?</p>\n?",
+    re.DOTALL,
+)
+
+# El sexto —el de las tablas de flexión— abre el <p> dentro de un {% if %} y lo
+# cierra fuera, así que no se puede quitar como bloque: se quitan su enlace y la
+# pregunta que lo introduce, y el párrafo se queda vacío.
+ENLACE_FORMULARIO = re.compile(
+    r"<a\b(?:(?!</a>).)*?docs\.google\.com/forms(?:(?!</a>).)*?</a>\.?",
+    re.DOTALL,
+)
+# variante que deja el texto del enlace en su sitio; las comillas del href
+# pueden ser tipográficas, que es como están en thanks.tsv
+ANCLA_FORMULARIO_CONSERVANDO_TEXTO = re.compile(
+    r"<a\b(?:(?!</a>).)*?docs\.google\.com/forms(?:(?!</a>).)*?>(.*?)</a>",
+    re.DOTALL,
+)
+PREGUNTAS_UPSTREAM = [
+    "Did you spot a mistake in the declension table? Something\n                missing?",
+    "Did you spot a mistake in the conjugation table? Something\n                missing?",
+]
+
+# El botón «sugerencias» y su sección, que carga feedback_template.js: ese
+# archivo es enteramente formularios de Bodhirasa.
+BOTON_SUGERENCIAS = re.compile(
+    r"[ \t]*<a class=\"dpd-button\" href=\"#\" data-target=\"feedback_"
+    r"\{\{ d\.i\.lemma_1_ \}\}\">feedback</a>\n?"
+)
+SECCION_SUGERENCIAS = re.compile(
+    r"<div id=\"feedback_\{\{ d\.i\.lemma_1_ \}\}\" class=\"dpd content hidden\">"
+    r".*?</div>\n?",
+    re.DOTALL,
+)
+
+
+# Los mismos pies viven también dentro de los literales de plantilla de los
+# .js, que se copian a `res/` y se ejecutan al abrir una familia o la
+# frecuencia. Aquí no hay Jinja, así que el bloque se puede quitar entero.
+PIE_JS = re.compile(
+    r"[ \t]*<p class=['\"]dpd-footer['\"]>(?:(?!</p>).)*?docs\.google\.com"
+    r"(?:(?!</p>).)*?</p>\n?",
+    re.DOTALL,
+)
+# La hoja de cálculo para proponer palabras vive en el repositorio de upstream:
+# es otra vía de envío, no una atribución, y también sobra.
+ENLACE_HOJA_UPSTREAM = re.compile(
+    r"<a\b(?:(?!</a>).)*?github\.com/digitalpalidictionary/dpd-db/raw"
+    r"(?:(?!</a>).)*?</a>",
+    re.DOTALL,
+)
+# main.js escribe el resultado de makeFeedback en el div que acabamos de quitar.
+# Sin esto getElementById devuelve null, la asignación lanza, y como ese bloque
+# es lo primero de loadButtonContent se queda sin cargar todo lo que va detrás:
+# frecuencia, familias, conjuntos. Es decir, el diccionario entero se quedaría
+# sin botones que funcionen.
+LLAMADA_FEEDBACK_MAIN_JS = re.compile(
+    r"\n[ \t]*////+ *feedback\n+"
+    r"[ \t]*const feedbackHTML = makeFeedback\(data\);\n"
+    r"[ \t]*const feedbackElement = document\.getElementById\("
+    r"`feedback_\$\{lemmaTag\}`\);\n"
+    r"[ \t]*feedbackElement\.innerHTML = feedbackHTML;\n"
+)
+
+
+def filtrar_html(texto: str) -> str:
+    """Quita de un html ya montado los enlaces de envío a upstream.
+
+    Para lo que no pasa por una plantilla: los agradecimientos y la
+    bibliografía se concatenan a mano desde sus TSV. Se quita el ancla y se
+    conserva su texto, porque ahí el formulario se menciona para dar las
+    gracias a quien lo usó, no para invitar a usarlo.
+    """
+    return ANCLA_FORMULARIO_CONSERVANDO_TEXTO.sub(r"\1", texto)
+
+
+def filtrar_javascript(texto: str) -> str:
+    """Quita de un .js los enlaces de envío al proyecto original."""
+    texto = PIE_JS.sub("", texto)
+    texto = ENLACE_HOJA_UPSTREAM.sub("", texto)
+    texto = LLAMADA_FEEDBACK_MAIN_JS.sub("\n", texto)
+    texto = ENLACE_FORMULARIO.sub("", texto)
+    return texto
+
+
+def quitar_enlaces_upstream(source: str) -> str:
+    """Quita de una plantilla los pies y botones que apuntan a upstream."""
+    source = PIE_CON_FORMULARIO.sub("", source)
+    for pregunta in PREGUNTAS_UPSTREAM:
+        source = source.replace(pregunta, "")
+    source = ENLACE_FORMULARIO.sub("", source)
+    source = BOTON_SUGERENCIAS.sub("", source)
+    source = SECCION_SUGERENCIAS.sub("", source)
+    return source
+
 
 def translate_template_source(source: str, phrases: dict[str, dict[str, str]]) -> str:
     """Replace known English strings in one Jinja template with their Spanish.
 
     Only text nodes and a few visible attributes are touched, never markup,
     Jinja expressions or the contents of `<script>`/`<style>`.
+
+    De paso quita los enlaces al proyecto original: ver
+    `quitar_enlaces_upstream`. Va aquí y no en un paso aparte porque este es el
+    único punto por el que pasa el fuente de todas las plantillas.
     """
+    source = quitar_enlaces_upstream(source)
 
     def translate(text: str) -> str | None:
         stored = phrases.get(" ".join(text.split()))

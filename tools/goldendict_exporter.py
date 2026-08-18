@@ -13,6 +13,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import idzip
 from pyglossary.glossary_v2 import Glossary
 
+from tools import spanish
 from tools.date_and_time import make_timestamp
 from tools.goldendict_path import make_goldendict_path
 from tools.printer import printer as pr
@@ -192,6 +193,10 @@ def add_js(glos: Glossary, dict_var: DictVariables) -> Glossary:
         for js_path in dict_var.js_paths:
             if js_path and js_path.exists():
                 js = js_path.read_bytes()
+                if spanish.is_active():
+                    # la capa española no envía correcciones al proyecto
+                    # original: ver tools/spanish.filtrar_javascript
+                    js = spanish.filtrar_javascript(js.decode("utf-8")).encode("utf-8")
                 glos.addEntry(glos.newDataEntry(js_path.name, js))
         pr.yes("ok")
     else:

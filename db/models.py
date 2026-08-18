@@ -1228,6 +1228,18 @@ class DpdHeadword(Base):
     def meaning_2(cls):  # type:ignore
         return cls.__table__.c.meaning_2
 
+    @hybrid_property
+    def notes(self) -> str:  # type:ignore
+        return spanish.overlay_notes(self._notes)
+
+    @notes.setter
+    def notes(self, value: str) -> None:  # type:ignore
+        self._notes = value
+
+    @notes.expression
+    def notes(cls):  # type:ignore
+        return cls.__table__.c.notes
+
     non_ia: Mapped[str] = mapped_column(default="")
     sanskrit: Mapped[str] = mapped_column(default="")
 
@@ -1269,7 +1281,9 @@ class DpdHeadword(Base):
     var_phonetic: Mapped[str] = mapped_column(default="")
     var_text: Mapped[str] = mapped_column(default="")
     commentary: Mapped[str] = mapped_column(default="")
-    notes: Mapped[str] = mapped_column(default="")
+    # overlaid like the meanings: instance reads can return Spanish, writes and
+    # SQL expressions stay on the English column
+    _notes: Mapped[str] = mapped_column("notes", default="")
     cognate: Mapped[str] = mapped_column(default="")
     link: Mapped[str] = mapped_column(default="")
     origin: Mapped[str] = mapped_column(default="")

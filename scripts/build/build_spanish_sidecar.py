@@ -39,11 +39,14 @@ from tools.spanish import (
     TABLE,
     UI_COLUMN,
     UI_TABLE,
+    NOTES_COLUMN,
+    NOTES_TABLE,
 )
 
 SANSKRIT_TSV = Path(__file__).parent / "sanskrit_meanings_es.tsv"
 CORRECCIONES_TSV = Path(__file__).parent / "material_es_correcciones.tsv"
 UI_TSV = Path(__file__).parent / "webapp_ui_es.tsv"
+NOTES_TSV = Path(__file__).parent / "notes_es.tsv"
 COMPOUNDS_TSV = Path(__file__).parent / "compounds_es.tsv"
 
 POS_PATTERN = re.compile(r"^(?P<pos>[^.]{1,20})\.\s+")
@@ -213,6 +216,7 @@ def write_sidecar(
     entries: dict[str, dict[str, str]],
     roots: dict[str, dict[str, str]],
     sanskrit: dict[str, dict[str, str]],
+    notes: dict[str, dict[str, str]],
     ui: dict[str, dict[str, str]],
     output_path: Path,
 ) -> None:
@@ -227,6 +231,7 @@ def write_sidecar(
         _write_table(
             connection, SANSKRIT_TABLE, "meaning_en", (SANSKRIT_COLUMN,), sanskrit
         )
+        _write_table(connection, NOTES_TABLE, "notes_en", (NOTES_COLUMN,), notes)
         _write_table(connection, UI_TABLE, "text_en", (UI_COLUMN,), ui)
         connection.commit()
     finally:
@@ -263,6 +268,7 @@ def main() -> None:
     )
     parser.add_argument("--roots", type=Path, help="path to dpd_roots.js")
     parser.add_argument("--sanskrit", type=Path, default=SANSKRIT_TSV)
+    parser.add_argument("--notes", type=Path, default=NOTES_TSV)
     parser.add_argument("--ui", type=Path, default=UI_TSV)
     parser.add_argument("--compounds", type=Path, default=COMPOUNDS_TSV)
     parser.add_argument("--correcciones", type=Path, default=CORRECCIONES_TSV)
@@ -335,12 +341,16 @@ def main() -> None:
     sanskrit = read_sanskrit(args.sanskrit, roots)
     pr.yes(len(sanskrit))
 
+    pr.green_tmr("reading notes")
+    notes = read_pairs(args.notes, NOTES_COLUMN)
+    pr.yes(len(notes))
+
     pr.green_tmr("reading interface strings")
     ui = read_pairs(args.ui, UI_COLUMN)
     pr.yes(len(ui))
 
     pr.green_tmr("writing sidecar")
-    write_sidecar(entries, roots, sanskrit, ui, args.output)
+    write_sidecar(entries, roots, sanskrit, notes, ui, args.output)
     pr.yes(len(entries) + len(roots) + len(sanskrit))
 
     checked = sum(1 for fields in entries.values() if fields["meaning_1"])
@@ -349,6 +359,7 @@ def main() -> None:
     pr.summary("meaning_lit", sum(1 for f in entries.values() if f["meaning_lit"]))
     pr.summary("roots", len(roots))
     pr.summary("sanskrit", len(sanskrit))
+    pr.summary("notas", len(notes))
     pr.summary("interfaz", len(ui))
     pr.toc()
 
