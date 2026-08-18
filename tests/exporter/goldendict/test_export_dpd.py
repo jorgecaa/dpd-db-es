@@ -9,6 +9,7 @@ import pytest
 from db.db_helpers import get_db_session
 from db.models import DpdHeadword, FamilyRoot, FamilyWord
 from exporter.goldendict.export_dpd import (
+    _batches_of_size,
     _dedupe_keys,
     _iter_dpd_row_pages,
     _lookup_family_compounds,
@@ -139,36 +140,24 @@ def test_preloaded_family_lookups_match_reference(db_session):
         ]
 
 
-def test_default_page_is_single_lemma_ordered_page(db_session):
-    """High-mem mode yields one page of all requested rows, ordered by lemma_1."""
-    limit = 250
-    pages = list(
-        _iter_dpd_row_pages(db_session, data_limit=limit, low_mem=False, page_size=100)
-    )
-    assert len(pages) == 1
-    got_ids = [pw.id for pw, _, _ in pages[0]]
-
-    expected_ids = [
-        row.id
-        for row in db_session.query(DpdHeadword)
-        .order_by(DpdHeadword.lemma_1)
-        .limit(limit)
-        .all()
-    ]
-    assert got_ids == expected_ids
-
-
-def test_keyset_pages_match_ordered_by_id(db_session):
-    """Low-mem keyset paging covers the same rows, in id order, no dupes/gaps."""
+def test_pages_are_bounded_by_page_size(db_session):
+    """Every mode pages: the parent never holds more than page_size rows."""
     limit = 250
     page_size = 100
-    pages = list(
-        _iter_dpd_row_pages(
-            db_session, data_limit=limit, low_mem=True, page_size=page_size
-        )
-    )
+    pages = list(_iter_dpd_row_pages(db_session, data_limit=limit, page_size=page_size))
     # 250 rows in pages of 100 -> 100, 100, 50
     assert [len(p) for p in pages] == [100, 100, 50]
+    assert all(len(p) <= page_size for p in pages)
+
+
+def test_keyset_pages_preserve_lemma_order(db_session):
+    """Keyset paging covers the same rows, in lemma_1 order, no dupes/gaps.
+
+    Order matters: paging must not change which entries the export produces or
+    the sequence it produces them in, only how many are resident at a time.
+    """
+    limit = 250
+    pages = list(_iter_dpd_row_pages(db_session, data_limit=limit, page_size=100))
 
     keyset_ids = [pw.id for page in pages for pw, _, _ in page]
     assert len(keyset_ids) == limit
@@ -177,11 +166,20 @@ def test_keyset_pages_match_ordered_by_id(db_session):
     expected_ids = [
         row.id
         for row in db_session.query(DpdHeadword)
-        .order_by(DpdHeadword.id)
+        .order_by(DpdHeadword.lemma_1)
         .limit(limit)
         .all()
     ]
     assert keyset_ids == expected_ids
+
+
+def test_batches_of_size_bounds_worker_input():
+    """Batch size is fixed, so a worker's input never scales with the dataset."""
+    for total in (10, 1000, 9999):
+        items = list(range(total))
+        batches = _batches_of_size(items, 250)  # type: ignore[arg-type]
+        assert all(len(b) <= 250 for b in batches)
+        assert [x for b in batches for x in b] == items
 
 
 def _raising_worker(_batch):
