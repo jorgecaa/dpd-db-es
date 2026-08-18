@@ -1,0 +1,550 @@
+# acepción inglesa	categoría	acepción española — corrección manual del glosario
+# El glosario se deriva del corpus publicado, así que hereda sus errores. Aquí
+# van las claves corregidas a mano, con su porqué. Se aplican después de
+# construir el glosario y antes de traducir por reuso.
+#
+# «shining» y «illuminating» en neutro: el neutro pali en -ana es un nombre de
+# acción, no un adjetivo ni un agente. DOP da para obhāsana «shining, being
+# bright; illumining» y CPD «illuminating; illumination»: la acción de iluminar,
+# no lo que ilumina. El corpus fijó «brillante», que es adjetivo.
+shining	nt	resplandor
+illuminating	nt	iluminación
+# El gerundio español no puede ser sustantivo. Cuando el inglés en -ing
+# nombra la acción y el lema es un sustantivo, la traducción va en sustantivo
+# de acción, o en infinitivo cuando el sustantivo sonaría forzado («hacer
+# recitar»). Estas claves llegaban a 187 entradas generadas.
+contemplating	nt	contemplación
+deceiving	nt	engaño
+plucking out	nt	arrancar
+arranging	nt	disposición
+ending	nt	fin
+carrying	nt	transporte
+meditating	nt	meditación
+speaking about	nt	hablar acerca de
+putting together	nt	composición
+taking away	nt	retirada
+finishing	nt	conclusión
+filling	nt	llenado
+suffusing	nt	impregnación
+pervading	nt	permeación
+placing	nt	colocación
+putting	nt	puesta
+guarding	nt	custodia
+protecting	nt	protección
+crumbling	nt	desmoronamiento
+going down	nt	descenso
+observing	nt	observación
+relinquishing	nt	renuncia
+admonishing	nt	amonestación
+illustrating	fem	ilustración
+raining	nt	lluvia
+confirming	nt	confirmación
+refusing	nt	negativa
+setting in order	nt	ordenación
+giving results	nt	producción de resultados
+abolishing	nt	abolición
+pouring	nt	vertido
+investigating	nt	investigación
+picking up	nt	recogida
+reflecting (on)	nt	reflexión (sobre)
+examining	nt	examen
+annihilating	nt	aniquilación
+knowing	nt	conocimiento
+weaving	nt	tejido
+overpowering	nt	dominación
+vanquishing	nt	vencimiento
+overpowering	fem	dominación
+vanquishing	fem	vencimiento
+depending	nt	dependencia
+experiencing of, undergoing	nt	experimentación, padecimiento
+helping	masc	ayuda
+upholding	masc	sostenimiento
+fostering	masc	fomento
+comparing	nt	comparación
+surveying	nt	inspección
+understanding the meaning	nt	comprensión del significado
+calling the name	nt	llamada por el nombre
+telling about	nt	relato sobre
+adorning	fem	ornamentación
+beautifying	fem	embellecimiento
+heaping up	nt	amontonamiento
+thinking (about)	nt	pensamiento (sobre)
+thinking (about)	fem	pensamiento (sobre)
+running	nt	carrera
+robbing	nt	hurto
+polishing	nt	pulido
+clashing	nt	choque
+contacting	nt	contacto
+watching over	fem	vigilancia
+playing	masc	juego
+vexing	fem	fastidio
+diminishing	nt	disminución
+eating	fem	comida
+flying	nt	vuelo
+detesting	nt	aversión
+tilling	nt	labranza
+playing	nt	juego
+getting	nt	consecución
+obtaining	nt	obtención
+tying	fem	atadura
+taking a bath	nt	baño
+tying down	nt	amarre
+depositing	nt	depósito
+holding down	nt	sujeción
+ceasing	nt	cesación
+streaming out	nt	chorro
+speaking coarsely	nt	habla grosera
+(of medicine) applying	nt	(de medicina) aplicación
+veiling	nt	cubrimiento
+(of a ship) going downstream	fem	(de un barco) descenso río abajo
+sailing downstream	fem	navegación río abajo
+looking (at)	nt	mirada
+pouring over	nt	derramamiento sobre
+coming down (from)	nt	bajada (de)
+breaking through	masc	penetración
+smashing	masc	aplastamiento
+splitting	masc	división
+cooking	nt	cocción
+roasting	nt	asado
+making visible	nt	hacer visible
+rejecting	fem	rechazo
+refusing	fem	negativa
+cracking open	nt	rajadura
+cleaving	nt	hendidura
+trickling	nt	escurrimiento
+oozing	nt	rezumo
+dripping	nt	goteo
+letting go (of)	nt	abandono
+arriving	nt	llegada
+making clear	fem	aclaración
+presuming	nt	presunción
+imagining	nt	imaginación
+rubbing all over	nt	frotamiento por todas partes
+striking down	fem	derribo
+occurring	nt	acaecimiento
+moving forward	nt	avance
+growing	fem	crecimiento
+aiming	nt	aspiración
+colliding	nt	colisión
+assenting	nt	asentimiento
+acknowledging	nt	reconocimiento
+admitting	nt	admisión
+confessing	nt	confesión
+assenting	fem	asentimiento
+confirming	fem	confirmación
+acknowledging	fem	reconocimiento
+confessing	fem	confesión
+calming down	fem	apaciguamiento
+discriminating	nt	discriminación
+announcing	fem	anuncio
+breaking through (to)	nt	irrupción (hacia)
+applying	nt	aplicación
+closing	nt	cierre
+nourishing	fem	nutrición
+taking pleasure	nt	complacencia
+finding pleasure (in)	nt	deleite (en)
+weeping	nt	llanto
+preferring	nt	preferencia
+choosing	nt	elección
+realizing	nt	realización
+focusing	nt	enfoque
+concentrating	nt	concentración
+surpassing	nt	superación
+transcending	nt	trascendencia
+uniting	nt	unión
+gladdening	nt	alegramiento
+experiencing	nt	experimentación
+combining	nt	combinación
+rescuing	nt	rescate
+saving	nt	salvación
+overwhelming	nt	avasallamiento
+repealing	nt	derogación
+settling	fem	asentamiento
+listening	nt	escucha
+walking about	masc	deambulación
+recognizing	nt	reconocimiento
+perceiving	nt	percepción
+bringing together	masc	reunión
+leading	nt	conducción
+knocking together	nt	entrechoque
+watering	nt	riego
+settling	nt	pacificación
+setting in order	fem	ordenación
+satisfying	nt	satisfacción
+celebrating	nt	celebración
+reciting	nt	recitación
+making recite	nt	hacer recitar
+abolishing	fem	abolición
+finding fault	nt	reproche
+correcting	nt	corrección
+elevating	fem	elevación
+combing	nt	peinado
+severing	masc	corte
+breaking off	masc	ruptura
+caressing	nt	caricia
+fondling	nt	mimo
+eavesdropping	fem	escucha furtiva
+snooping	fem	espionaje
+listening in	fem	escucha a escondidas
+upholding	nt	sostenimiento
+setting up	nt	disposición
+readying	nt	preparación
+producing	nt	producción
+leaving the monkhood	nt	abandono de la vida monástica
+going back to laylife	nt	vuelta a la vida laica
+glinting	nt	centelleo
+comprehending	nt	entendimiento
+disturbing	nt	perturbación
+upsetting	nt	alteración
+looking	nt	mirada
+perishing	nt	perecimiento
+distorting	nt	distorsión
+bearing fruit	nt	fructificación
+making wither	nt	hacer marchitar
+stabilising	nt	estabilización
+arguing	nt	discusión
+quarrelling	nt	pelea
+disputing	nt	disputa
+disparaging	nt	menosprecio
+disputing	fem	disputa
+quarrelling	fem	pelea
+inspecting	nt	inspección
+pointing out	masc	señalamiento
+observing the disadvantage	fem	observación de la desventaja
+contemplating the unsatisfactoriness (of)	fem	contemplación de la insatisfactoriedad (de)
+talking to	nt	alocución
+inviting	fem	invitación
+(of an offence) committing	nt	(de una falta) comisión
+falling into	nt	caída en
+taking leave	nt	petición de permiso
+# Misma razón, otra forma: el adjetivo o el nombre de agente («destellante»)
+# tampoco nombran la acción. Estos los detecté a mano, porque distinguir
+# «destellante» (adjetivo) de «consonante» (sustantivo) pide un analizador
+# morfológico del español que no hay en la máquina.
+flashing	nt	destello
+glowing	masc	incandescencia
+imposing	nt	imposición
+referring to	nt	referencia a
+remaining	nt	permanencia
+wandering	masc	vagabundeo
+waning	nt	mengua
+# Erratas de tilde heredadas del corpus, detectadas con el corrector
+# ortográfico español (hunspell + diccionario de LibreOffice).
+Neem tree	masc	árbol de nim
+affirmation	nt	afirmación
+appropriate occasion	masc	ocasión apropiada
+becoming weary	prp	agotándose
+comforted	aor	reconfortó
+concentrating	prp	concentrándose
+consoled	aor	consoló
+died	idiom	murió
+epithet of a stream enterer	adj	epíteto de quien ha entrado en la corriente
+exceeded	aor	excedió
+extended	aor	extendió
+extending	nt	extensión
+focusing	prp	enfocándose
+for the advantage of gladness	adj	para la ventaja de la alegría
+for the purpose of	adj	con el propósito de
+fortieth (40th)	ordin	cuadragésimo (40.o)
+four month invitation for requisites	fem	invitación de cuatro meses para requisitos
+four-legged	adj	cuadrúpedo
+going beyond the limit	nt	ir mas allá del limite
+going beyond the limit	prp	ir mas allá del limite
+growing tired (from)	prp	cansándose (de)
+having gone beyond	abs	habiendo ido mas allá
+having paid attention	abs	habiendo prestado atención
+longing, wish, desire	nt	anhelo, deseo, aspiración
+mental action	masc	acción mental
+neem tree	masc	árbol de nim
+non-transgression	masc	no-transgresión
+not being attracted (to)	prp	sin sentirse atraído (por)
+of bad character	adj	de mal carácter
+orphan	adj	huérfano
+passionless	adj	sin pasión
+poetry	nt	poesía
+realization (of)	fem	consecución (de)
+ripple	fem	ondulación
+scorning	adj	desdeñando
+scorning	prp	desdeñando
+scrawny	adj	escuálido
+scrawny and without strength	adj	escuálido y sin fuerza
+should not be exceeded	ptp	no debería ser excedido
+should not be overstepped	ptp	no debería ser sobrepasado
+standing firmly	prp	manteniéndose firme
+teaching of the Buddha	nt	enseñanza del Buddha
+testicle	nt	testículo
+thin and weak	adj	delgado y débil
+too small	adj	demasiado pequeño
+unethically	ind	sin ética
+very much	ind	muchísimo
+who has gone beyond	adj	que ha ido mas allá
+# Gerundios reflexivos («disolviéndose») y adjetivos («alentador») donde el
+# inglés nombra la acción. Los primeros se me escaparon en el barrido inicial
+# porque su terminación lleva tilde; los segundos los aisló el léxico de
+# Apertium, que dice qué palabras españolas nunca son sustantivo.
+addressing	fem	alocución
+becoming disinterested (in)	nt	desencanto (con)
+becoming free (from)	nt	liberación (de)
+bending down	nt	inclinación
+bending, bowing down	nt	inclinación, reverencia
+contracting	nt	contracción
+delighting	nt	deleite
+departing (from)	nt	partida (de)
+disrobing	nt	abandono del hábito
+dissolving	masc	disolución
+dissolving	nt	disolución
+diving	fem	inmersión
+engaging (in)	nt	dedicación (a)
+falling apart	nt	desmoronamiento
+going away (from)	nt	marcha (de)
+hurrying	nt	prisa
+plunging	fem	zambullida
+plunging	nt	zambullida
+rushing	nt	precipitación
+settling down	nt	asentamiento
+sticking	nt	adherencia
+submerging	fem	sumersión
+submerging	nt	sumersión
+swaying	nt	balanceo
+annoying	fem	molestia
+cunning	nt	astucia
+encouraging	nt	aliento
+harassing	fem	acoso
+illuminating	fem	iluminación
+pleasing	nt	agrado
+sprinting	nt	carrera veloz
+welcoming	nt	acogida
+# Participio de presente con inglés «being X»: en español es «siendo X» o
+# «estando X», no un infinitivo ni una relativa. Se me escaparon en el
+# barrido de los -ing porque excluí «having»/«being» — «having» marca el
+# absolutivo, y «being» se fue de paso.
+being consumed	prp	estando consumido
+being dear	prp	siendo querido
+being hit	prp	siendo impactado
+being incapable (of)	prp	siendo incapaz (de)
+being obsessed	prp	estando obsesionado
+# Participio de presente: el pali denota acción en curso, así que en español
+# va en gerundio. El corpus publicado ya lo hace en el 93 % de sus prp; lo
+# generado por reuso se iba a la relativa, al infinitivo o al sustantivo.
+(of time) passing	prp	(del tiempo) transcurriendo
+advancing	prp	avanzando
+adverting	prp	advirtiendo
+afflicting	prp	afligiendo
+attaining	prp	alcanzando
+attracting	prp	captando
+awakening	prp	despertando
+beaming	prp	resplandeciendo
+believing	prp	creyendo
+believing (in)	prp	creyendo (en)
+belittling	prp	menospreciando
+bending back	prp	doblándose hacia atrás
+bending down, stooping	prp	inclinándose, agachándose
+betraying	prp	traicionando
+blinking	prp	parpadeando
+bringing near	prp	acercando
+buying	prp	comprando
+causing anger	prp	provocando ira
+checking	prp	verificando
+cherishing	prp	apreciando
+coiling	prp	enroscando
+conducting oneself	prp	conduciéndose
+converging	prp	convergiendo
+conveying	prp	transportando
+covering over	prp	cubriendo
+crackling	prp	crepitando
+crawling	prp	arrastrándose
+creeping	prp	arrastrándose
+curling	prp	rizando
+delimiting	prp	delimitando
+departing	prp	partiendo
+digesting	prp	digiriendo
+disapproving	prp	desaprobando
+disregarding	prp	desestimando
+distributing	prp	distribuyendo
+dividing	prp	dividiendo
+doubting	prp	dudando
+escaping	prp	escapando
+exalting	prp	exaltando
+expressing approval	prp	expresando aprobación
+extolling	prp	enalteciendo
+feeding on	prp	alimentándose de
+flexing	prp	flexionando
+flooding	prp	inundando
+folding back	prp	plegándose hacia atrás
+following after	prp	siguiendo detrás
+following one's example	prp	siguiendo el ejemplo
+freeing	prp	liberando
+freezing	prp	helando
+fully grasping	prp	agarrando completamente
+going beyond the limit	prp	yendo más allá del límite
+going out to meet	prp	saliendo a recibir
+grazing	prp	pastando
+handing over	prp	entregando
+having faith	prp	teniendo fe
+hoping to get	prp	esperando obtener
+illuminating	prp	iluminando
+imitating	prp	imitando
+immobilizing	prp	inmovilizando
+inclining (towards)	prp	inclinándose (hacia)
+indicating	prp	indicando
+infuriating	prp	enfureciendo
+irritating	prp	irritando
+jeering	prp	mofándose
+judging	prp	juzgando
+kneading	prp	amasando
+laughing at	prp	riéndose de
+lifting up	prp	levantando
+liking	prp	gustando
+living apart	prp	viviendo apartado
+looking away	prp	mirando lejos
+looking forward	prp	mirando al frente
+lowering	prp	bajando
+lying down	prp	yaciendo
+making fun of	prp	mofándose de
+making understand	prp	haciendo comprender
+making use of	prp	haciendo uso de
+marking	prp	marcando
+maturing	prp	desarrollándose
+measuring	prp	midiendo
+menacing	prp	intimidando
+mocking	prp	burlándose
+moistening	prp	humedeciendo
+molesting	prp	molestando
+moving aside	prp	moviéndose a un lado
+not acquiring	prp	no adquiriendo
+not allowing	prp	no permitiendo
+not appearing	prp	no apareciendo
+not approaching	prp	no acercándose
+not arising	prp	sin surgiendo
+not arriving	prp	no llegando
+not asking permission	prp	sin pidiendo permiso
+not aspiring	prp	sin aspirando
+not aspiring (for)	prp	sin aspirando (a)
+not attaching	prp	no apegándose
+not being afraid	prp	no teniendo miedo
+not being attracted (to)	prp	sin sintiéndose atraído (por)
+not being broken	prp	no rompiéndose
+not believing	prp	no creyendo
+not binding	prp	no atando
+not breaking	prp	no rompiéndose
+not clinging	prp	no aferrándose
+not coming	prp	no viniendo
+not contacting	prp	sin contactando
+not contemplating	prp	sin contemplando
+not continuing	prp	no continuando
+not creating	prp	no creyendo
+not destroying	prp	no destruyendo
+not detesting	prp	no detestando
+not deviating	prp	sin desviándose
+not disappearing	prp	no desapareciendo
+not discerning	prp	no discerniendo
+not doing	prp	no haciendo
+not dropping	prp	no cayendo
+not eating	prp	no comiendo
+not exceeding	prp	no excediendo
+not existing	prp	no existiendo
+not finding pleasure (in)	prp	no encontrando placer (en)
+not fitting	prp	no encajando
+not following	prp	sin siguiendo
+not generating	prp	sin generando
+not going beyond	prp	no yendo más allá
+not going too far	prp	no yendo demasiado lejos
+not guarding	prp	no vigilando
+not happening	prp	no sucediendo
+not having confidence (in)	prp	no teniendo confianza (en)
+not hearing	prp	no oyendo
+not knowing	prp	sin sabiendo
+not knowing for oneself	prp	no conociendo por sí mismo
+not leaving behind	prp	sin dejando atrás
+not listening (to)	prp	no escuchando (a)
+not making	prp	no realizando
+not making use (of)	prp	no haciendo uso (de)
+not making use of	prp	no haciendo uso de
+not moving	prp	sin moviéndose
+not occurring	prp	no ocurriendo
+not offending	prp	sin ofendiendo
+not offering	prp	no ofreciendo
+not overstepping	prp	no sobrepasando
+not permitting	prp	no autorizando
+not protecting	prp	no protegiendo
+not reaching	prp	no alcanzando
+not realizing	prp	sin realizando
+not recollecting	prp	sin rememorando
+not rejecting	prp	no rechazando
+not remembering	prp	sin recordando
+not removing	prp	sin removiendo
+not speaking	prp	no hablando
+not sticking	prp	no aferrándose
+not stirring	prp	sin agitándose
+not stopping	prp	no deteniéndose
+not supporting	prp	no apoyando
+not taking	prp	sin tomando
+not taking place	prp	no teniendo lugar
+not talking	prp	no conversando
+not telling	prp	sin diciendo
+not thinking (about)	prp	no pensando (en)
+not touching	prp	sin tocando
+not transgressing	prp	no transgrediendo
+not trembling	prp	no temblando
+not using	prp	sin usando
+not vanishing	prp	no desvaneciéndose
+not wavering	prp	no vacilando
+not wishing	prp	no deseando
+partaking (in)	prp	participando (en)
+placing down	prp	colocando abajo
+planning	prp	planificando
+plotting against	prp	conspirando contra
+poking	prp	pinchando
+pondering	prp	meditando
+pounding	prp	machacando
+pouring out	prp	vertiendo
+pricking	prp	punzando
+prohibiting	prp	prohibiendo
+provoking	prp	provocando
+reasoning	prp	razonando
+referring (to)	prp	refiriéndose (a)
+referring to	prp	refiriéndose a
+related	prp	relatando
+relishing	prp	saboreando
+rescinding	prp	rescindiendo
+revolving	prp	rotando
+ripening	prp	madurando
+rolling	prp	rodando
+ruining	prp	arruinando
+scaring	prp	espantando
+selling	prp	vendiendo
+sinking	prp	hundiéndose
+sinking down	prp	hundiéndose del todo
+sitting	prp	sentándose
+soaking	prp	remojando
+spreading over	prp	extendiéndose sobre
+starting	prp	comenzando
+stretching	prp	estirando
+struggling	prp	forcejeando
+summing up	prp	resumiendo
+suppressing	prp	suprimiendo
+surrounding	prp	rodeando
+taking pleasure (in)	prp	deleitándose (en)
+talking nonsense	prp	hablando disparates
+terrifying	prp	aterrando
+thinking lightly (of)	prp	pensando con ligereza (de)
+throwing	prp	lanzando
+tossing	prp	agitando
+treasuring	prp	atesorando
+tugging	prp	tirando
+turning away	prp	alejándose
+twisting	prp	retorciendo
+tying together	prp	atando juntos
+understanding clearly	prp	comprendiendo claramente
+walking along	prp	caminando a lo largo
+warding off	prp	repeliendo
+wearing	prp	vistiendo
+wetting	prp	mojando
+winking	prp	guiñando
+winning	prp	triunfando
+wishing for	prp	deseando
+wishing to get	prp	anhelando obtener
+withering	prp	marchitándose
+wriggling	prp	retorciéndose
+yawning	prp	bostezando
+yoking, harnessing, combining, uniting, mixing, applying, preparing, urging	prp	unciendo, enganchando, combinando, uniendo, mezclando, aplicando, preparando, instando

@@ -1,0 +1,239 @@
+# Cadenas de la interfaz de la webapp: inglés<TAB>español.
+# La clave es el texto exacto de la plantilla, normalizado en espacios.
+# Se dejan SIN traducir a propósito:
+#   - nombres propios (Digital Pāḷi Dictionary, Sutta Central, VRI, PTS…)
+#   - términos pali que el diccionario usa como tales (nikāya, vagga, piṭaka)
+#   - siglas técnicas (CST, BJT, IPA, SC, PID, EMA, CPU)
+
+# ── botones de la ficha ──────────────────────────────────────────────────────
+grammar	gramática
+example	ejemplo
+examples	ejemplos
+conjugation	conjugación
+declension	declinación
+root family	familia de raíz
+word family	familia de palabra
+compound family	familia de compuesto
+compound families	familias de compuesto
+idioms	modismos
+set	conjunto
+sets	conjuntos
+frequency	frecuencia
+feedback	sugerencias
+summary	resumen
+family	familia
+context	contexto
+source	fuente
+variant	variante
+help	ayuda
+search	buscar
+clear	limpiar
+find	buscar
+here	aquí
+of	de
+in	en
+with	con
+without	sin
+
+# ── tabla de gramática ──────────────────────────────────────────────────────
+Lemma	Lema
+Traditional Lemma	Lema tradicional
+Grammar	Gramática
+Meaning	Significado
+Root	Raíz
+Root Family	Familia de raíz
+Sanskrit	Sánscrito
+Sanskrit Root	Raíz sánscrita
+Base	Base
+Construction	Construcción
+Derivative	Derivado
+Compound	Compuesto
+Phonetic Change	Cambio fonético
+Phonetic Variant	Variante fonética
+Textual Variant	Variante textual
+Variant	Variante
+Synonym	Sinónimo
+Antonym	Antónimo
+English Cognate	Cognado inglés
+Non IA	No indoaria
+Notes	Notas
+Commentary	Comentario
+Example	Ejemplo
+Summary	Resumen
+Information	Información
+Links	Enlaces
+Abbreviation	Abreviatura
+Title	Título
+Book	Libro
+Book ID	ID del libro
+File	Archivo
+Filename	Nombre de archivo
+Section	Sección
+Major Section	Sección mayor
+Minor Section	Sección menor
+Paragraph	Párrafo
+Page Number	Número de página
+Page Offset	Desplazamiento de página
+Sutta	Sutta
+Sutta Code	Código del sutta
+Sutta Length	Extensión del sutta
+Parallels	Paralelos
+Partial Parallels	Paralelos parciales
+Blurb	Sinopsis
+Audience	Destinatario
+Teacher	Maestro
+Prominence	Relevancia
+Similes	Símiles
+Method of Teaching	Método de enseñanza
+Type of Teaching	Tipo de enseñanza
+Particular Topic	Tema concreto
+Stage of Training	Etapa del entrenamiento
+Training In	Entrenamiento en
+Key Excerpts 1	Pasajes clave 1
+Key Excerpts 2	Pasajes clave 2
+Suggested Reading	Lectura sugerida
+English Translation	Traducción al inglés
+English translations	traducciones al inglés
+Tipiṭaka Translations	Traducciones del Tipiṭaka
+Web Link	Enlace web
+Myanmar	Birmania
+Thai	Tailandia
+Others	Otros
+
+# ── cabecera, ajustes e historial ───────────────────────────────────────────
+Settings	Ajustes
+History	Historial
+Clear history	Borrar el historial
+Toggle History	Mostrar u ocultar el historial
+Toggle Settings	Mostrar u ocultar los ajustes
+Select Language	Idioma
+General Theme	Tema general
+font size	tamaño de letra
+light / dark mode	modo claro / oscuro
+sans / serif font	letra sin remates / con remates
+summary hide / show	resumen ocultar / mostrar
+grammar closed / open	gramática cerrada / abierta
+example closed / open	ejemplo cerrado / abierto
+one button at a time off / on	un botón cada vez no / sí
+sandhi ' hide / show	sandhi ' ocultar / mostrar
+niggahīta ṃ / ṁ	niggahīta ṃ / ṁ
+audio male / female	audio masculino / femenino
+dpd logo	logotipo de DPD
+Play Audio	Reproducir el audio
+Back to the top	Volver arriba
+start with	empieza por
+fuzzy	aproximada
+use plain text or regex	texto normal o expresión regular
+normal/rx	normal/rx
+Only show results	Mostrar solo los resultados
+Only displaying the first	Mostrando solo los primeros
+results.	resultados.
+all books	todos los libros
+texts	textos
+Search for	Buscar
+Add a missing word	Añadir una palabra que falta
+Correct a mistake	Corregir un error
+Did you spot a mistake?	¿Has visto un error?
+Spot a mistake?	¿Ves un error?
+Does something look wrong?	¿Hay algo que no cuadra?
+Something out of place?	¿Algo fuera de lugar?
+Report it here	Comunícalo aquí
+Report it here.	Comunícalo aquí.
+Correct it here.	Corrígelo aquí.
+Add it here.	Añádelo aquí.
+Log it here.	Regístralo aquí.
+log it here.	regístralo aquí.
+Fix it here	Corrígelo aquí
+add missing words here	añadir aquí las palabras que faltan
+suggest any improvements here	sugerir mejoras aquí
+Get involved	Colabora
+Help	Ayuda
+Email updates	Avisos por correo
+Join the mailing list	Suscribirse a la lista de correo
+RSS feed	Canal RSS
+Read the docs	Leer la documentación
+read the docs	la documentación
+online form	formulario en línea
+spreadsheet to download	hoja de cálculo descargable
+GitHub Issues	incidencias de GitHub
+Report issues or suggest features on GitHub	Comunicar fallos o proponer mejoras en GitHub
+grayed out	en gris
+
+# ── prosa: avisos y explicaciones ───────────────────────────────────────────
+Digital Pāḷi Dictionary is a work in progress, made available for testing and feedback purposes.	El Digital Pāḷi Dictionary está en desarrollo; se publica para poder probarlo y recibir sugerencias.
+. Did you spot a mistake in the dictionary? Have something to add? Please report it. It generally takes less than a minute and your corrections and suggestions help to improve the quality of this dictionary for everyone who uses it.	. ¿Has visto un error en el diccionario? ¿Tienes algo que añadir? Comunícalo, por favor. No suele llevar ni un minuto, y tus correcciones y sugerencias ayudan a mejorar la calidad del diccionario para todo el que lo usa.
+. Get more detailed information about installation on your devices, upgrades, advanced settings and features.	. Encontrarás información detallada sobre la instalación en tus dispositivos, las actualizaciones, los ajustes avanzados y las funciones.
+. Get notified of updates and new features as soon as they become available.	. Recibe aviso de las actualizaciones y las novedades en cuanto estén disponibles.
+. If you're a Pāḷi specialist or a coder, or would like to contribute to the project in any way, please get in touch.	. Si eres especialista en pali o programador, o quieres colaborar con el proyecto de cualquier forma, ponte en contacto.
+Inflections not found in any Pāḷi corpus, or within processed sandhi compounds are	Las flexiones que no aparecen en ningún corpus pali, ni dentro de los compuestos sandhi procesados, se muestran
+. They might still occur within compounds.	. Aun así pueden aparecer dentro de compuestos.
+It probably only occurs in compounds. Or perhaps there is an error.	Probablemente solo aparece en compuestos. O quizá haya un error.
+There are no matches of	No hay ninguna aparición de
+in any texts.	en ningún texto.
+For a detailed explanation of how this word frequency chart is calculated, it's accuracies and inaccuracies, please refer to	Para una explicación detallada de cómo se calcula esta tabla de frecuencia, con sus aciertos y sus limitaciones, consulta
+this webpage	esta página
+to add missing words, especially from Vinaya, commentaries, and other later texts. If you prefer to work offline, here is a	para añadir palabras que faltan, sobre todo del Vinaya, los comentarios y otros textos tardíos. Si prefieres trabajar sin conexión, aquí tienes una
+These word breakups are code-generated. For more information,	Estas segmentaciones las genera un programa. Para más información, consulta
+. Mistakes in deconstruction are usually caused by a word missing from the dictionary. You can	. Los errores de segmentación suelen deberse a una palabra que falta en el diccionario. Puedes
+For detailed information on this feature, please	Para información detallada sobre esta función, consulta
+Search for Pāḷi text or English translations in the Chaṭṭha Saṅgāyana Tipiṭaka	Busca texto pali o traducciones al inglés en el Chaṭṭha Saṅgāyana Tipiṭaka
+Search for definitions of the term	Busca definiciones del término
+bold defined terms in the Chaṭṭha Saṅgāyana Tipiṭaka	términos definidos en negrita en el Chaṭṭha Saṅgāyana Tipiṭaka
+and English translations are generated using Deepseek.	y las traducciones al inglés se generan con Deepseek.
+. Pāḷī texts are from	. Los textos pali proceden de
+Please refine your search criteria by:	Acota los criterios de búsqueda:
+1. Using a more specific search term in the first search box.	1. Usando un término más concreto en la primera casilla.
+2. Searching withing results in the second search box.	2. Buscando dentro de los resultados en la segunda casilla.
+3. Using `starts with` to narrow the search.	3. Usando «empieza por» para acotar la búsqueda.
+4. Using regular expressions to search more precisely.	4. Usando expresiones regulares para buscar con más precisión.
+No official requests processed since restart.	No se ha procesado ninguna petición oficial desde el reinicio.
+. Please	. Puedes
+. Please use this	. Usa este
+Can you think of a better example?	¿Se te ocurre un ejemplo mejor?
+Did you spot a mistake in the declension table? Something missing?	¿Has visto un error en la tabla de declinación? ¿Falta algo?
+Did you spot a mistake in the conjugation table? Something missing?	¿Has visto un error en la tabla de conjugación? ¿Falta algo?
+If something looks out of place,	Si algo parece fuera de lugar,
+. Pāḷī texts are from	. Los textos pali proceden de
+. This uses	. Esto usa
+, fill in and submit.	, rellénala y envíala.
+# ── cadenas vistas en la webapp que seguían en inglés (navegación de agosto) ──
+CST Bold Definitions	Definiciones en negrita del CST
+For more information, please	Para más información, consulta
+grammar:	gramática:
+grammar.	gramática.
+variants:	variantes:
+variants.	variantes.
+pos ⇅	categoría ⇅
+word ⇅	palabra ⇅
+filename	archivo
+Frequency of	Frecuencia de
+and its declensions	y sus declinaciones
+and its conjugations	y sus conjugaciones
+# ── mensaje de bienvenida (static/home.js y app.js) ──────────────────────────
+# La frase se parte en trozos porque el HTML lleva <b> en medio; cada trozo se
+# traduce por separado y el orden español se acomoda a esa partición.
+Search for Pāḷi or English words above using	Busca arriba palabras en pali o inglés usando caracteres
+or	o
+characters.	.
+Double click	Doble clic
+on any word to search for it.	en cualquier palabra para buscarla.
+Adjust the	Ajusta la
+settings	configuración
+to suit your preferences.	a tu gusto.
+Refresh	Recarga
+the page if you experience any problems.	la página si algo va mal.
+Click here	Pulsa aquí
+for more details about this website or	para más detalles sobre este sitio, o
+more information	más información
+about DPD in general.	sobre el DPD en general.
+Start by	Empieza haciendo
+double clicking	doble clic
+on any word in the list below:	en cualquier palabra de la lista de abajo:
+# ── tablas de flexión (inflections_html, generado dentro de dpd.db) ──────────
+# masc, fem, sg, pl y las abreviaturas de caso (nom, acc, instr…) se dejan:
+# son iguales en español. El encabezado se rehace aparte, en spanish.py.
+neut sg	neutro sg
+neut pl	neutro pl
+in comps	en comps.
+reflexive sg	reflexivo sg
+reflexive pl	reflexivo pl

@@ -19,6 +19,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.sql import func
 
+from tools import spanish
 from tools.pali_sort_key import pali_sort_key
 from tools.pos import CONJUGATIONS, DECLENSIONS, EXCLUDE_FROM_FREQ
 
@@ -76,9 +77,42 @@ class DpdRoot(Base):
     root_has_verb: Mapped[str] = mapped_column(default="")
     root_group: Mapped[int] = mapped_column(default=0)
     root_sign: Mapped[str] = mapped_column(default="")
-    root_meaning: Mapped[str] = mapped_column(default="")
+
+    # read through the Spanish overlay, like the meaning columns of
+    # DpdHeadword: instance reads may return Spanish, writes and SQL
+    # expressions always use the English column
+    _root_meaning: Mapped[str] = mapped_column("root_meaning", default="")
+
+    @hybrid_property
+    def root_meaning(self) -> str:  # type:ignore
+        return spanish.overlay_root(self.root, self._root_meaning)
+
+    @root_meaning.setter
+    def root_meaning(self, value: str) -> None:  # type:ignore
+        self._root_meaning = value
+
+    @root_meaning.expression
+    def root_meaning(cls):  # type:ignore
+        return cls.__table__.c.root_meaning
+
     sanskrit_root: Mapped[str] = mapped_column(default="")
-    sanskrit_root_meaning: Mapped[str] = mapped_column(default="")
+
+    _sanskrit_root_meaning: Mapped[str] = mapped_column(
+        "sanskrit_root_meaning", default=""
+    )
+
+    @hybrid_property
+    def sanskrit_root_meaning(self) -> str:  # type:ignore
+        return spanish.overlay_sanskrit(self._sanskrit_root_meaning)
+
+    @sanskrit_root_meaning.setter
+    def sanskrit_root_meaning(self, value: str) -> None:  # type:ignore
+        self._sanskrit_root_meaning = value
+
+    @sanskrit_root_meaning.expression
+    def sanskrit_root_meaning(cls):  # type:ignore
+        return cls.__table__.c.sanskrit_root_meaning
+
     sanskrit_root_class: Mapped[str] = mapped_column(default="")
     root_example: Mapped[str] = mapped_column(default="")
     dhatupatha_num: Mapped[str] = mapped_column(default="")
@@ -173,6 +207,12 @@ class FamilyRoot(Base):
     root_family: Mapped[str] = mapped_column(default="")
     root_meaning: Mapped[str] = mapped_column(default="")
     html: Mapped[str] = mapped_column(default="")
+
+    @cached_property
+    def html_es(self) -> str:
+        """`html` with the Spanish overlay applied to its meaning cells."""
+        return spanish.translate_family_html(self.html, object_session(self))
+
     data: Mapped[str] = mapped_column(default="")
     count: Mapped[int] = mapped_column(default=0)
 
@@ -1144,9 +1184,49 @@ class DpdHeadword(Base):
     trans: Mapped[str] = mapped_column(default="")
     plus_case: Mapped[str] = mapped_column(default="")
 
-    meaning_1: Mapped[str] = mapped_column(default="")
-    meaning_lit: Mapped[str] = mapped_column(default="")
-    meaning_2: Mapped[str] = mapped_column(default="")
+    # The database columns keep their names; the attributes are private because
+    # the public `meaning_1`, `meaning_lit` and `meaning_2` below read through
+    # the Spanish overlay in `tools/spanish.py` (off by default). Only instance
+    # reads can return Spanish — writes and SQL expressions stay on English.
+    _meaning_1: Mapped[str] = mapped_column("meaning_1", default="")
+    _meaning_lit: Mapped[str] = mapped_column("meaning_lit", default="")
+    _meaning_2: Mapped[str] = mapped_column("meaning_2", default="")
+
+    @hybrid_property
+    def meaning_1(self) -> str:  # type:ignore
+        return spanish.overlay(self, "meaning_1", self._meaning_1)
+
+    @meaning_1.setter
+    def meaning_1(self, value: str) -> None:  # type:ignore
+        self._meaning_1 = value
+
+    @meaning_1.expression
+    def meaning_1(cls):  # type:ignore
+        return cls.__table__.c.meaning_1
+
+    @hybrid_property
+    def meaning_lit(self) -> str:  # type:ignore
+        return spanish.overlay(self, "meaning_lit", self._meaning_lit)
+
+    @meaning_lit.setter
+    def meaning_lit(self, value: str) -> None:  # type:ignore
+        self._meaning_lit = value
+
+    @meaning_lit.expression
+    def meaning_lit(cls):  # type:ignore
+        return cls.__table__.c.meaning_lit
+
+    @hybrid_property
+    def meaning_2(self) -> str:  # type:ignore
+        return spanish.overlay(self, "meaning_2", self._meaning_2)
+
+    @meaning_2.setter
+    def meaning_2(self, value: str) -> None:  # type:ignore
+        self._meaning_2 = value
+
+    @meaning_2.expression
+    def meaning_2(cls):  # type:ignore
+        return cls.__table__.c.meaning_2
 
     non_ia: Mapped[str] = mapped_column(default="")
     sanskrit: Mapped[str] = mapped_column(default="")
@@ -1214,6 +1294,7 @@ class DpdHeadword(Base):
     inflections_devanagari: Mapped[str] = mapped_column(default="")
     inflections_thai: Mapped[str] = mapped_column(default="")
     inflections_html: Mapped[str] = mapped_column(default="")
+
     freq_data: Mapped[str] = mapped_column(default="")
     freq_html: Mapped[str] = mapped_column(default="")
     ebt_count: Mapped[int] = mapped_column(default=0, server_default="0")
@@ -1303,6 +1384,28 @@ class DpdHeadword(Base):
         from tools.meaning_construction import make_meaning_combo_html
 
         return make_meaning_combo_html(self)
+
+    @cached_property
+    def spanish_source(self) -> str:
+        """Which project the displayed meaning comes from. Nothing else."""
+        origin = spanish.origin_of(self)
+        if origin == spanish.GENERATED:
+            return "dpd-es"
+        if origin:
+            return "dpd-dictionary-es"
+        return "DPD"
+
+    @cached_property
+    def meaning_combo_english(self) -> str:
+        """`meaning_combo` with the Spanish overlay off: the DPD original.
+
+        Built from the function rather than from `meaning_combo`, so suppressing
+        the overlay here cannot cache an English value into that property.
+        """
+        from tools.meaning_construction import make_meaning_combo
+
+        with spanish.suppressed():
+            return make_meaning_combo(self)
 
     @cached_property
     def root_base_clean(self) -> str:
@@ -1791,6 +1894,12 @@ class FamilyCompound(Base):
     __tablename__ = "family_compound"
     compound_family: Mapped[str] = mapped_column(primary_key=True)
     html: Mapped[str] = mapped_column(default="")
+
+    @cached_property
+    def html_es(self) -> str:
+        """`html` with the Spanish overlay applied to its meaning cells."""
+        return spanish.translate_family_html(self.html, object_session(self))
+
     data: Mapped[str] = mapped_column(default="")
     count: Mapped[int] = mapped_column(default=0)
 
@@ -1810,6 +1919,12 @@ class FamilyWord(Base):
     __tablename__ = "family_word"
     word_family: Mapped[str] = mapped_column(primary_key=True)
     html: Mapped[str] = mapped_column(default="")
+
+    @cached_property
+    def html_es(self) -> str:
+        """`html` with the Spanish overlay applied to its meaning cells."""
+        return spanish.translate_family_html(self.html, object_session(self))
+
     data: Mapped[str] = mapped_column(default="")
     count: Mapped[int] = mapped_column(default=0)
 
@@ -1833,6 +1948,12 @@ class FamilySet(Base):
     __tablename__ = "family_set"
     set: Mapped[str] = mapped_column(primary_key=True)
     html: Mapped[str] = mapped_column(default="")
+
+    @cached_property
+    def html_es(self) -> str:
+        """`html` with the Spanish overlay applied to its meaning cells."""
+        return spanish.translate_family_html(self.html, object_session(self))
+
     data: Mapped[str] = mapped_column(default="")
     count: Mapped[int] = mapped_column(default=0)
 
@@ -1852,6 +1973,12 @@ class FamilyIdiom(Base):
     __tablename__ = "family_idiom"
     idiom: Mapped[str] = mapped_column(primary_key=True)
     html: Mapped[str] = mapped_column(default="")
+
+    @cached_property
+    def html_es(self) -> str:
+        """`html` with the Spanish overlay applied to its meaning cells."""
+        return spanish.translate_family_html(self.html, object_session(self))
+
     data: Mapped[str] = mapped_column(default="")
     count: Mapped[int] = mapped_column(default=0)
 

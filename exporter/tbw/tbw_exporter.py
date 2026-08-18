@@ -12,6 +12,7 @@ import json
 
 from db.db_helpers import get_db_session
 from db.models import DpdHeadword, Lookup
+from tools import spanish
 from tools.configger import config_test
 from tools.cst_sc_text_sets import make_sc_text_set
 from tools.pali_sort_key import pali_list_sorter, pali_sort_key
@@ -105,14 +106,19 @@ def generate_i2h_dict(g: GlobalVars) -> None:
     """make an inflections to headwords dictionary"""
 
     pr.green_tmr("making inflection2headwords dict")
-    for i in g.dpd_db:
-        inflections = i.inflections_list_all  # include api ca eva iti
-        for inflection in inflections:
-            test1 = inflection in g.word_set or inflection in g.deconstructed_splits_set
-            test2 = "(gram)" not in i.meaning_1
-            if test1 and test2:
-                g.matched_set.add(inflection)
-                g.i2h_dict.setdefault(inflection, []).append(i.lemma_1)
+    # the "(gram)" marker only exists in the English, so this test reads the
+    # English whatever the Spanish overlay is set to
+    with spanish.suppressed():
+        for i in g.dpd_db:
+            inflections = i.inflections_list_all  # include api ca eva iti
+            for inflection in inflections:
+                test1 = (
+                    inflection in g.word_set or inflection in g.deconstructed_splits_set
+                )
+                test2 = "(gram)" not in i.meaning_1
+                if test1 and test2:
+                    g.matched_set.add(inflection)
+                    g.i2h_dict.setdefault(inflection, []).append(i.lemma_1)
     pr.yes(len(g.i2h_dict))
 
 

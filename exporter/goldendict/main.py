@@ -16,6 +16,7 @@ from exporter.goldendict.export_roots import generate_root_html
 from exporter.goldendict.export_variant_spelling import generate_variant_spelling_html
 from exporter.goldendict.helpers import make_roots_count_dict
 from tools.cache_load import load_cf_set, load_idioms_set
+from tools import spanish
 from tools.configger import config_read, config_test
 from tools.goldendict_exporter import (
     DictEntry,
@@ -140,6 +141,24 @@ def prepare_export_to_goldendict_mdict(g: GlobalVars) -> None:
     )
 
     dict_name = "dpd"
+
+    # the Spanish build is a different dictionary, not a rebuild of this one:
+    # same files under the same name would overwrite the English GoldenDict
+    if spanish.is_active():
+        dict_info = DictInfo(
+            bookname="Diccionario Pāḷi Digital",
+            author="Bodhirasa",
+            description="""
+    <p>Digital Pāḷi Dictionary, de Bodhirasa</p>
+    <p>Capa en español. Para más información, visita
+    <a href=\"https://digitalpalidictionary.github.io\">
+    el sitio del Digital Pāḷi Dictionary</a></p>
+    """,
+            website="https://digitalpalidictionary.github.io/",
+            source_lang="pi",
+            target_lang="es",
+        )
+        dict_name = "dpd-es"
 
     dict_var = DictVariables(
         css_paths=[g.pth.dpd_css_and_fonts_path],

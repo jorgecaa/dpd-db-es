@@ -24,6 +24,7 @@ from tools.css_manager import CSSManager
 from tools.paths import ProjectPaths
 from tools.pali_text_files import cst_texts
 from tools.tipitaka_db import search_all_cst_texts, search_books
+from tools import spanish
 from tools.configger import config_test
 from tools.translit import auto_translit_to_roman
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -33,7 +34,13 @@ app = FastAPI()
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"])
 app.add_middleware(GZipMiddleware, minimum_size=500)
-app.mount("/static", StaticFiles(directory=str(pth.webapp_static_dir)), name="static")
+# the opening message lives in static/home.js, not in a template; with the
+# overlay on this serves a translated copy of the javascript, else the original
+app.mount(
+    "/static",
+    StaticFiles(directory=str(spanish.translate_static(pth.webapp_static_dir))),
+    name="static",
+)
 
 # Create session factory for database connections
 SessionLocal = sessionmaker(
@@ -66,6 +73,11 @@ with get_db() as db_session:
 
 # Set up templates
 templates = Jinja2Templates(directory=str(pth.webapp_templates_dir))
+# serves the interface in Spanish when the overlay is on; a no-op otherwise
+spanish.translate_templates(templates)
+# the inflection table carries its English inside the db, so it is translated
+# where it is rendered, not where it is loaded
+templates.env.filters["inflexion_es"] = spanish.translate_inflection_html
 # pyrefly: ignore  # jinja2 leaves Environment.globals unannotated, so its value
 # type infers as the union of jinja's own defaults; extending it is the
 # documented usage.

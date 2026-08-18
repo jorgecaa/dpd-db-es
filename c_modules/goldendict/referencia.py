@@ -105,6 +105,7 @@ def main() -> None:
     if not args.minificar:
         # el piloto tiene el mismo interruptor; sin minificar las diferencias
         # se leen, que es lo que hace falta mientras se porta una sección
+        # pyrefly: ignore  # sustituir minify por la identidad es el objetivo
         export_dpd.minify = lambda html: html
 
     pr.green_title("volcando la referencia de Python")
@@ -125,6 +126,8 @@ def main() -> None:
     jinja_env = get_jinja2_env("exporter/goldendict/templates")
     # el exportador real la pone en _worker_init; sin esto la fila TBW Legacy
     # sale distinta
+    # pyrefly: ignore  # jinja2 deja Environment.globals sin anotar, igual que
+    # en exporter/goldendict/export_dpd.py
     jinja_env.globals["show_tbw"] = config_test("dictionary", "show_tbw", "yes")
     render_data: dict[str, Any] = {
         "pth": pth,

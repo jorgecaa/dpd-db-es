@@ -11,6 +11,7 @@ from sqlalchemy.orm.session import Session
 
 from db.db_helpers import get_db_session
 from db.models import DpdHeadword, DpdRoot
+from tools import spanish
 from tools.paths import ProjectPaths
 from tools.printer import printer as pr
 
@@ -19,8 +20,11 @@ def backup_dpd_headwords_and_roots(pth: ProjectPaths):
     pr.tic()
     pr.yellow_title("backing headword and roots tables to tsv")
     db_session = get_db_session(pth.dpd_db_path)
-    backup_dpd_headwords(db_session, pth)
-    backup_dpd_roots(db_session, pth)
+    # these TSVs are the versioned source of the dictionary, so they must hold
+    # the English originals even when the Spanish overlay is switched on
+    with spanish.suppressed():
+        backup_dpd_headwords(db_session, pth)
+        backup_dpd_roots(db_session, pth)
     db_session.close()
     git_commit(pth)
     pr.toc()
