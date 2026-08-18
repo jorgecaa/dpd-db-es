@@ -572,3 +572,69 @@ void construir_sutta_info(Buffer *b, const Sutta *su, int id,
     emitir_sutta_info(b, su, id_str, lemma_, link.datos, hoy);
     free(link.datos);
 }
+
+/* ---------- sutta_codes_list (tools/sutta_codes.py) ---------- */
+
+/* "SN12.5-8" -> SN12.5 SN12.6 SN12.7 SN12.8; sin punto no expande nada. */
+static void expandir_rango(const char *codigo, Lista *destino) {
+    const char *punto = strchr(codigo, '.');
+    const char *guion = strchr(codigo, '-');
+    if (!punto || !guion || guion < punto) return;
+    char base[128];
+    size_t nb = (size_t)(punto - codigo) + 1;
+    if (nb >= sizeof base) return;
+    memcpy(base, codigo, nb);
+    base[nb] = '\0';
+    int primero = atoi(punto + 1);
+    int ultimo = atoi(guion + 1);
+    for (int n = primero; n <= ultimo; n++) {
+        char buf[160];
+        snprintf(buf, sizeof buf, "%s%d", base, n);
+        lista_texto_add(destino, buf);
+    }
+}
+
+char **sutta_codes_list(const Sutta *su, size_t *cuantos) {
+    Lista l;
+    lista_texto_init(&l);
+    ConjuntoTexto *vistos = conjunto_nuevo(256);
+
+    lista_texto_add_unico(&l, vistos, su->dpd_code);
+    if (strchr(su->dpd_code, '-')) {
+        Lista r; lista_texto_init(&r);
+        expandir_rango(su->dpd_code, &r);
+        for (size_t i = 0; i < r.n; i++) lista_texto_add_unico(&l, vistos, r.items[i]);
+        lista_texto_liberar(&r);
+    }
+
+    if (!su_is_vagga(su) && !su_is_samyutta(su) && !su_is_nipata(su)) {
+        lista_texto_add_unico(&l, vistos, su->sc_code);
+        if (strchr(su->sc_code, '-')) {
+            Lista r; lista_texto_init(&r);
+            expandir_rango(su->sc_code, &r);
+            for (size_t i = 0; i < r.n; i++) lista_texto_add_unico(&l, vistos, r.items[i]);
+            lista_texto_liberar(&r);
+        }
+        /* THAG/THIG (prefijo de SuttaCentral) -> TH/THI (prefijo de DPD) */
+        static const char *PREFIJOS[][2] = {{"THAG", "TH"}, {"THIG", "THI"}, {NULL, NULL}};
+        for (int i = 0; PREFIJOS[i][0]; i++) {
+            size_t n = strlen(PREFIJOS[i][0]);
+            if (strncmp(su->sc_code, PREFIJOS[i][0], n) != 0) continue;
+            char sintetico[160];
+            snprintf(sintetico, sizeof sintetico, "%s%s", PREFIJOS[i][1], su->sc_code + n);
+            lista_texto_add_unico(&l, vistos, sintetico);
+            if (strchr(sintetico, '-')) {
+                Lista r; lista_texto_init(&r);
+                expandir_rango(sintetico, &r);
+                for (size_t k = 0; k < r.n; k++)
+                    lista_texto_add_unico(&l, vistos, r.items[k]);
+                lista_texto_liberar(&r);
+            }
+            break;
+        }
+    }
+
+    conjunto_liberar(vistos);
+    *cuantos = l.n;
+    return l.items;
+}

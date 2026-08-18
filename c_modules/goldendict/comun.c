@@ -124,3 +124,50 @@ ConjuntoTexto *conjunto_desde_json(const char *json) {
     free(t.datos);
     return c;
 }
+
+void conjunto_liberar(ConjuntoTexto *c) {
+    if (!c) return;
+    for (size_t i = 0; i < c->n_cubos; i++) {
+        Nodo *n = c->cubos[i];
+        while (n) {
+            Nodo *sig = n->sig;
+            free(n->texto);
+            free(n);
+            n = sig;
+        }
+    }
+    free(c->cubos);
+    free(c);
+}
+
+/* ---------- lista de cadenas ---------- */
+
+void lista_texto_init(Lista *l) {
+    l->capacidad = 32;
+    l->items = malloc(l->capacidad * sizeof *l->items);
+    if (!l->items) { fprintf(stderr, "sin memoria\n"); exit(1); }
+    l->n = 0;
+}
+
+void lista_texto_add(Lista *l, const char *s) {
+    if (l->n == l->capacidad) {
+        l->capacidad *= 2;
+        char **p = realloc(l->items, l->capacidad * sizeof *l->items);
+        if (!p) { fprintf(stderr, "sin memoria\n"); exit(1); }
+        l->items = p;
+    }
+    l->items[l->n++] = strdup(s);
+}
+
+void lista_texto_add_unico(Lista *l, ConjuntoTexto *vistos, const char *s) {
+    if (conjunto_contiene(vistos, s)) return;
+    conjunto_add(vistos, s);
+    lista_texto_add(l, s);
+}
+
+void lista_texto_liberar(Lista *l) {
+    for (size_t i = 0; i < l->n; i++) free(l->items[i]);
+    free(l->items);
+    l->n = l->capacidad = 0;
+    l->items = NULL;
+}

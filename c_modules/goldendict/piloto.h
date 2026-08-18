@@ -22,6 +22,19 @@ size_t largo_utf8(const char *s);
 /* ---------- conjunto de cadenas ---------- */
 
 typedef struct ConjuntoTexto ConjuntoTexto;
+void conjunto_liberar(ConjuntoTexto *c);
+
+/* ---------- lista de cadenas ---------- */
+
+typedef struct {
+    char **items;
+    size_t n, capacidad;
+} Lista;
+
+void lista_texto_init(Lista *l);
+void lista_texto_add(Lista *l, const char *s);
+void lista_texto_add_unico(Lista *l, ConjuntoTexto *vistos, const char *s);
+void lista_texto_liberar(Lista *l);
 
 ConjuntoTexto *conjunto_nuevo(size_t capacidad);
 void conjunto_add(ConjuntoTexto *c, const char *s);
@@ -81,6 +94,11 @@ typedef struct {
     const char *stem;
     const char *pattern;
     const char *lemma_trad_clean;   /* calculado en el cargador */
+    const char *inflections;
+    const char *inflections_api_ca_eva_iti;
+    const char *inflections_sinhala;
+    const char *inflections_devanagari;
+    const char *inflections_thai;
 } Entrada;
 
 typedef struct {
@@ -108,6 +126,54 @@ int sutta_es_samyutta(const Sutta *su);
 int sutta_es_vagga(const Sutta *su);
 int sutta_es_nipata(const Sutta *su);
 int sutta_es_pannasaka(const Sutta *su);
+char **sutta_codes_list(const Sutta *su, size_t *cuantos);
+
+/* ---------- sinónimos (sinonimos.c) ---------- */
+
+void speech_marks_cargar(const char *ruta);
+char **construir_sinonimos(const Entrada *e, const Sutta *su, size_t *cuantos);
+
+/* ---------- StarDict (stardict.c) ---------- */
+
+typedef struct {
+    const char *bookname;
+    const char *author;
+    const char *description;
+    const char *website;
+    const char *source_lang;
+    const char *target_lang;
+    const char *date;      /* vacío: se pone la marca de tiempo de ahora */
+} InfoDicc;
+
+typedef struct Diccionario Diccionario;
+
+Diccionario *dict_nuevo(size_t capacidad);
+void dict_add(Diccionario *d, const char *palabra, char *definicion,
+              size_t definicion_n, char **sinonimos, size_t n_sinonimos);
+size_t dict_cuantos(const Diccionario *d);
+void dict_escribir(Diccionario *d, const char *base, const InfoDicc *info);
+void dict_liberar(Diccionario *d);
+
+/* ---------- raíces y EPD (otros.c) ---------- */
+
+void otros_init(const char *ruta_css_variables);
+size_t exportar_raices(struct sqlite3 *db, Diccionario *dicc, const char *fecha,
+                       const char *hoy);
+size_t exportar_epd(struct sqlite3 *db, Diccionario *dicc);
+size_t volcar_raices(struct sqlite3 *db, const char *dir, const char *fecha,
+                     const char *hoy);
+size_t volcar_epd(struct sqlite3 *db, const char *dir, size_t limite);
+
+/* ---------- ayuda (ayuda.c) ---------- */
+
+size_t exportar_ayuda(Diccionario *dicc, const char *css_secondary);
+const char *css_reducido(const char *estilo);
+void dict_articulo(const Diccionario *d, size_t i, const char **palabra,
+                   const char **definicion, size_t *largo);
+
+/* Minifica un buffer entero; no hace nada si el modo está apagado. */
+extern int MINIFICAR;
+void minificar_buffer(Buffer *b);
 
 /* ---------- contexto compartido ---------- */
 

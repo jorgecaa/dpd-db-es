@@ -12,7 +12,8 @@ CC      ?= gcc
 CFLAGS  ?= -O2 -Wall -Wextra -D_GNU_SOURCE
 RAIZ    := ../..
 
-FUENTES := main.c comun.c cabecera.c cuerpo.c resumen.c gramatica.c sutta.c
+FUENTES := main.c comun.c cabecera.c cuerpo.c resumen.c gramatica.c sutta.c \
+           sinonimos.c stardict.c otros.c ayuda.c
 MINLIB  := minificador/target/release/libminificador.a
 
 # SQLite: por defecto se enlaza el del sistema (paquete sqlite-devel /

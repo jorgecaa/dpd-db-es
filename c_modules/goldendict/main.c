@@ -17,10 +17,22 @@
 /* envoltorio Rust de minify-html 0.18.1 (minificador/src/lib.rs) */
 unsigned char *minificar(const unsigned char *e, size_t n, size_t *sal);
 void minificar_liberar(unsigned char *p);
-static int MINIFICAR = 0;
+int MINIFICAR = 0;
 
 /* Igual que render_pali_word_dpd_html: la cabecera ya viene aplastada; el
  * cuerpo (desde "<body>") pasa por minify. */
+/* Minifica el buffer entero. Lo usan las entradas de raíces y EPD, que
+ * ensamblan la cabecera aparte y pasan solo el cuerpo. */
+void minificar_buffer(Buffer *b) {
+    if (!MINIFICAR) return;
+    size_t sal = 0;
+    unsigned char *min = minificar((const unsigned char *)b->datos, b->largo, &sal);
+    b->largo = 0;
+    b->datos[0] = 0;
+    buf_add_n(b, (const char *)min, sal);
+    minificar_liberar(min);
+}
+
 static void minificar_entrada(Buffer *b) {
     if (!MINIFICAR) return;
     char *cuerpo = strstr(b->datos, "<body>");
@@ -44,7 +56,8 @@ enum {
     C_EXAMPLE1, C_SUTTA1, C_SOURCE1, C_EXAMPLE2, C_SUTTA2, C_SOURCE2,
     C_COMMENTARY, C_NOTES, C_ANTONYM, C_SYNONYM, C_VARIANT,
     C_INFLECTIONS_HTML, C_FREQ_DATA, C_PLUS_CASE, C_ORIGIN, C_NEG, C_VERB, C_TRANS,
-    C_VAR_PHONETIC, C_VAR_TEXT, C_COGNATE, C_LINK, C_NON_IA, C_STEM, C_PATTERN
+    C_VAR_PHONETIC, C_VAR_TEXT, C_COGNATE, C_LINK, C_NON_IA, C_STEM, C_PATTERN,
+    C_INFLECTIONS, C_INFL_API, C_INFL_SINHALA, C_INFL_DEVANAGARI, C_INFL_THAI
 };
 
 static const char *COLUMNAS =
@@ -56,7 +69,8 @@ static const char *COLUMNAS =
     " example_1, sutta_1, source_1, example_2, sutta_2, source_2,"
     " commentary, notes, antonym, synonym, variant, inflections_html, freq_data,"
     " plus_case, origin, neg, verb, trans, var_phonetic, var_text, cognate,"
-    " link, non_ia, stem, pattern";
+    " link, non_ia, stem, pattern, inflections, inflections_api_ca_eva_iti,"
+    " inflections_sinhala, inflections_devanagari, inflections_thai";
 
 static const char *txt(sqlite3_stmt *st, int col) {
     const unsigned char *v = sqlite3_column_text(st, col);
@@ -107,6 +121,11 @@ static void cargar_entrada(Entrada *e, sqlite3_stmt *st) {
     e->freq_data = txt(st, C_FREQ_DATA);
     e->plus_case = txt(st, C_PLUS_CASE);
     e->origin = txt(st, C_ORIGIN);
+    e->inflections = txt(st, C_INFLECTIONS);
+    e->inflections_api_ca_eva_iti = txt(st, C_INFL_API);
+    e->inflections_sinhala = txt(st, C_INFL_SINHALA);
+    e->inflections_devanagari = txt(st, C_INFL_DEVANAGARI);
+    e->inflections_thai = txt(st, C_INFL_THAI);
     e->neg = txt(st, C_NEG);
     e->verb = txt(st, C_VERB);
     e->trans = txt(st, C_TRANS);
@@ -274,16 +293,28 @@ static void fecha_hoy(char *destino, size_t n) {
 }
 
 int main(int argc, char **argv) {
+    int exportar = (argc > 1 && strcmp(argv[1], "exportar") == 0);
+    int volcarotros = (argc > 1 && strcmp(argv[1], "volcarotros") == 0);
     int volcado = (argc > 1 && (strcmp(argv[1], "volcado") == 0 ||
                                 strcmp(argv[1], "volcadomin") == 0));
-    MINIFICAR = (argc > 1 && strcmp(argv[1], "volcadomin") == 0) ||
+    MINIFICAR = (argc > 1 && strcmp(argv[1], "volcadomin") == 0) || exportar ||
+                volcarotros ||
                 getenv("PILOTO_MINIFICAR") != NULL;
-    const char *ruta_db = volcado ? argv[2] : (argc > 1 ? argv[1] : "dpd.db");
-    const char *dir = volcado ? argv[3] : NULL;
+    const char *ruta_db = (volcado || exportar || volcarotros) ? argv[2]
+                                                : (argc > 1 ? argv[1] : "dpd.db");
+    const char *dir = (volcado || exportar || volcarotros) ? argv[3] : NULL;
     const char *ruta_ids = volcado ? argv[4] : NULL;
-    int n = volcado ? 0 : (argc > 2 ? atoi(argv[2]) : 2000);
+    int n = exportar ? (argc > 4 ? atoi(argv[4]) : 0)
+                     : volcado ? 0 : (argc > 2 ? atoi(argv[2]) : 2000);
 
-    if (volcado && argc < 5) { fprintf(stderr, "uso: piloto2 volcado <db> <dir> <ids.txt>\n"); return 2; }
+    if (volcado && argc < 5) {
+        fprintf(stderr, "uso: piloto volcado|volcadomin <db> <dir> <ids.txt>\n");
+        return 2;
+    }
+    if (exportar && argc < 4) {
+        fprintf(stderr, "uso: piloto exportar <db> <base_salida> [limite]\n");
+        return 2;
+    }
 
     cabecera_init("identity/css/dpd-variables.css");
     /* config_test("dictionary", "show_tbw", "yes"), como _worker_init */
@@ -311,6 +342,8 @@ int main(int argc, char **argv) {
     sutta_alias_cargar(db);
     ui_cargar("scripts/build/webapp_ui_es.tsv");
     espanol_cargar("dpd_es.db");
+    otros_init("identity/css/dpd-variables.css");
+    speech_marks_cargar("tools/speech_marks.json");
     Contexto ctx = { idioms, cfs, audio, suttas, NULL, NULL };
 
     char fecha[32];
@@ -320,6 +353,8 @@ int main(int argc, char **argv) {
     char sql[2048];
     if (volcado)
         snprintf(sql, sizeof sql, "SELECT %s FROM dpd_headwords WHERE id = ?", COLUMNAS);
+    else if (exportar && n == 0)
+        snprintf(sql, sizeof sql, "SELECT %s FROM dpd_headwords ORDER BY lemma_1", COLUMNAS);
     else
         snprintf(sql, sizeof sql, "SELECT %s FROM dpd_headwords ORDER BY lemma_1 LIMIT ?", COLUMNAS);
 
@@ -329,7 +364,80 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (volcado) {
+    if (volcarotros) {
+        size_t nr = volcar_raices(DB_GLOBAL, dir, fecha, FECHA_HOY);
+        size_t ne = volcar_epd(DB_GLOBAL, dir, 200);
+        Diccionario *da = dict_nuevo(512);
+        size_t na = exportar_ayuda(da, css_reducido("secondary"));
+        for (size_t i = 0; i < dict_cuantos(da); i++) {
+            const char *palabra, *datos; size_t largo;
+            dict_articulo(da, i, &palabra, &datos, &largo);
+            char nombre[512];
+            size_t k = 0;
+            for (const char *p = palabra; *p && k + 1 < sizeof nombre; p++)
+                nombre[k++] = (*p == '/' || *p == ' ') ? '_' : *p;
+            nombre[k] = '\0';
+            char ruta[1024];
+            snprintf(ruta, sizeof ruta, "%s/ayuda_%s.html", dir, nombre);
+            FILE *fa = fopen(ruta, "wb");
+            if (fa) { fwrite(datos, 1, largo, fa); fclose(fa); }
+        }
+        dict_liberar(da);
+        printf("raíces: %zu\nepd: %zu (volcadas 200)\nayuda: %zu\n", nr, ne, na);
+    } else if (exportar) {
+        /* mismos valores que prepare_export_to_goldendict_mdict con la capa
+         * española activa: es un diccionario distinto, no una recompilación */
+        InfoDicc info = {
+            .bookname = "Diccionario Pāḷi Digital",
+            .author = "Bodhirasa",
+            .description =
+                "\n    <p>Digital Pāḷi Dictionary, de Bodhirasa</p>\n"
+                "    <p>Capa en español. Para más información, visita\n"
+                "    <a href=\"https://digitalpalidictionary.github.io\">\n"
+                "    el sitio del Digital Pāḷi Dictionary</a></p>\n    ",
+            .website = "https://digitalpalidictionary.github.io/",
+            .source_lang = "pi",
+            .target_lang = "es",
+            .date = getenv("PILOTO_FECHA"),
+        };
+        sqlite3_bind_int(st, 1, n);
+        Diccionario *dicc = dict_nuevo(90000);
+        struct timespec t0, t1;
+        clock_gettime(CLOCK_MONOTONIC, &t0);
+        int i = 0;
+        while ((n == 0 || i < n) && sqlite3_step(st) == SQLITE_ROW) {
+            Entrada e; cargar_entrada(&e, st);
+            Buffer b; buf_init(&b, 16384);
+            construir_cabecera(&b, &e, fecha, idioms, cfs);
+            construir_cuerpo(&b, &e, &ctx);
+            minificar_entrada(&b);
+            Sutta *su = sutta_cargar(DB_GLOBAL, e.lemma_1);
+            size_t n_sin = 0;
+            char **sins = construir_sinonimos(&e, su, &n_sin);
+            sutta_liberar(su);
+            dict_add(dicc, e.lemma_1, b.datos, b.largo, sins, n_sin);
+            i++;
+        }
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        double seg = (double)(t1.tv_sec - t0.tv_sec) +
+                     (double)(t1.tv_nsec - t0.tv_nsec) / 1e9;
+        printf("entradas:            %d\n", i);
+        printf("renderizado:         %.3f s\n", seg);
+        /* las otras entradas del diccionario, como en main.py cuando no hay
+         * límite de datos: raíces y EPD */
+        if (n == 0) {
+            size_t n_raices = exportar_raices(DB_GLOBAL, dicc, fecha, FECHA_HOY);
+            size_t n_epd = exportar_epd(DB_GLOBAL, dicc);
+            size_t n_ayuda = exportar_ayuda(dicc, css_reducido("secondary"));
+            printf("raíces:              %zu\n", n_raices);
+            printf("epd:                 %zu\n", n_epd);
+            printf("ayuda:               %zu\n", n_ayuda);
+        }
+        dict_escribir(dicc, dir, &info);
+        printf("escrito:             %s.{ifo,idx,dict,syn}\n", dir);
+        printf("RSS pico:            %.1f MB\n", (double)rss_pico_kb() / 1024.0);
+        dict_liberar(dicc);
+    } else if (volcado) {
         FILE *fids = fopen(ruta_ids, "r");
         if (!fids) { fprintf(stderr, "no se pudo leer %s\n", ruta_ids); return 1; }
         char linea[64];
