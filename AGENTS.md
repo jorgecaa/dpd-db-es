@@ -282,34 +282,6 @@ These methods print and return (no ending needed):
 
 - `db_session.close()` is NOT a valid finding for short-lived build scripts. SQLAlchemy 2.0 has no `__del__`; for a script that exits after `main()`, the OS releases all connections on process exit. No resource leak. Do not flag it.
 
-## graphify
-
-A knowledge graph of the codebase lives at `graphify-out/` (14,254 nodes, 28,833 edges).
-
-### Querying
-```bash
-graphify query "how does X work"       # BFS subgraph — use this first
-graphify path "DpdHeadword" "Lookup"   # shortest path between two concepts
-graphify explain "ProjectPaths"        # plain-language node summary
-```
-Prefer these over grepping raw files — they return a scoped subgraph at ~13× fewer tokens.
-
-Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review.
-
-### Key god nodes (highest connectivity)
-`ProjectPaths` · `DpdHeadword` · `get_db_session()` · `Lookup` · `ToolKit`
-
-### Keeping it current
-After editing code, run (AST-only, no API cost):
-```bash
-graphify update .
-```
-
-To fully rebuild from scratch (requires Claude Code session tokens):
-```bash
-/graphify
-```
-
 ## Mobile DB export flags
 - The local justfile recipes `export-mobile` (dpd-db) and `build-db` (dpd-flutter-app) MUST pass the same `mobile_exporter.py` flags (`--cone --peu --wordnet`) so a local build equals the packaged DB. Keep both in sync when changing flags.
 - The CI release workflows (`mobile_release.yml`, `draft_release.yml`) intentionally pass fewer flags to ship a leaner public DB — do not align them to the full local set unless deliberately changing what the public release ships.

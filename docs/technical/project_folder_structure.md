@@ -3,6 +3,9 @@ Where are all the parts of the project located?
 
 ## Tree
 .
+├── archive
+├── audio
+├── conductor
 ├── db
 │   ├── backup_tsv
 │   ├── bold_definitions
@@ -42,6 +45,14 @@ Where are all the parts of the project located?
 │   ├── frequency
 │   ├── tools
 ├── gui2
+├── identity
+│   ├── css
+│   ├── fonts
+│   └── logo
+├── kamma
+│   ├── archive
+│   └── threads
+├── misc
 ├── resources
 ├── scripts
 │   ├── add
@@ -74,6 +85,12 @@ There are four main parts to the code:
 4. __exporter__: Compile all the parts and export into various dictionary formats.
 
 ## Folder details
+
+- **archive/** Retired code kept for reference only. Excluded from linting and type checking.
+
+- **audio/** Text-to-speech audio generation and release.
+
+- **conductor/** Product and tech-stack specs — `product.md` (vision, features, audience, release schedule) and `tech-stack.md` (full technology stack and key libraries).
 
 - **db/** All code related to building and populating the various tables and columns of the database.
 
@@ -158,6 +175,12 @@ There are four main parts to the code:
 	- **tools/** GO packages used across the project
 
 - **gui2/** A GUI for data capture and running database tests
+
+- **identity/** Single source of truth for project styling and branding (css, fonts, logo). `just css` propagates the css to the webapp, exporters and docs — don't edit the copies.
+
+- **kamma/** The project's work-thread system. `workflow.md` describes the task flow, `project.md` and `tech.md` hold the running project notes, `lessons.md` accumulates what went wrong, and one folder per thread lives in `threads/` (completed ones move to `archive/`).
+
+- **misc/** Assorted reference material and one-off data files, not used by any build step.
 
 - **resources/** All external resources used by the project, imported as submodules
 
