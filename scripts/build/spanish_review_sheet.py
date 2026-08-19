@@ -205,7 +205,7 @@ def decisiones_previas(destino: Path) -> dict[str, tuple[str, str]]:
         decision = str(fila[i_decision] or "").strip()
         texto = str(fila[i_texto] or "").strip()
         if decision or texto:
-            previas[fila[i_lema]] = (decision, texto)
+            previas[str(fila[i_lema])] = (decision, texto)
     return previas
 
 
@@ -217,7 +217,12 @@ def escribir(filas: list[dict[str, Any]], destino: Path) -> None:
         fila[DECISION], fila[TEXTO] = decision, texto
 
     libro = Workbook()
-    hoja: Worksheet = libro.active  # pyright: ignore[reportAssignmentType]
+    hoja = libro.active
+    # Un libro recién creado siempre trae una hoja, pero el tipo de `active`
+    # admite None: se estrecha aquí en vez de silenciarlo, porque un `ignore`
+    # calla a pyright y deja a pyrefly protestando en CI.
+    if not isinstance(hoja, Worksheet):
+        raise RuntimeError("el libro nuevo no trae hoja activa")
     hoja.title = "revisión"
 
     hoja.append([nombre for nombre, _ in COLUMNAS])
