@@ -1,0 +1,21 @@
+diff --git a/exporter/webapp/templates/dpd_headword.html b/exporter/webapp/templates/dpd_headword.html
+--- a/exporter/webapp/templates/dpd_headword.html
++++ b/exporter/webapp/templates/dpd_headword.html
+@@ -1277,7 +1277,7 @@
+ 
+     {% if d.i.needs_declension_button %}
+     <div id="declension_{{d.i.lemma_1_}}" class="dpd content hidden">
+-        {{d.i.inflections_html|safe}} {% if "gray" in d.i.inflections_html
++        {{d.i.inflections_html|inflexion_es|safe}} {% if "gray" in d.i.inflections_html
+         %}
+         <p>
+             Inflections not found in any Pāḷi corpus, or within
+@@ -1303,7 +1303,7 @@
+ 
+     {% if d.i.needs_conjugation_button %}
+     <div id="conjugation_{{d.i.lemma_1_}}" class="dpd content hidden">
+-        {{d.i.inflections_html|safe}} {% if "gray" in d.i.inflections_html
++        {{d.i.inflections_html|inflexion_es|safe}} {% if "gray" in d.i.inflections_html
+         %}
+         <p>
+             Inflections not found in any Pāḷi corpus, or within

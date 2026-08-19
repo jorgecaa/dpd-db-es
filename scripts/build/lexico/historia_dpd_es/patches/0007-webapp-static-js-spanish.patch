@@ -1,0 +1,28 @@
+diff --git a/exporter/webapp/main.py b/exporter/webapp/main.py
+--- a/exporter/webapp/main.py
++++ b/exporter/webapp/main.py
+@@ -34,7 +34,13 @@
+ 
+ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"])
+ app.add_middleware(GZipMiddleware, minimum_size=500)
+-app.mount("/static", StaticFiles(directory=str(pth.webapp_static_dir)), name="static")
++# the opening message lives in static/home.js, not in a template; with the
++# overlay on this serves a translated copy of the javascript, else the original
++app.mount(
++    "/static",
++    StaticFiles(directory=str(spanish.translate_static(pth.webapp_static_dir))),
++    name="static",
++)
+ 
+ # Create session factory for database connections
+ SessionLocal = sessionmaker(
+@@ -69,6 +75,9 @@
+ templates = Jinja2Templates(directory=str(pth.webapp_templates_dir))
+ # serves the interface in Spanish when the overlay is on; a no-op otherwise
+ spanish.translate_templates(templates)
++# the inflection table carries its English inside the db, so it is translated
++# where it is rendered, not where it is loaded
++templates.env.filters["inflexion_es"] = spanish.translate_inflection_html
+ # pyrefly: ignore  # jinja2 leaves Environment.globals unannotated, so its value
+ # type infers as the union of jinja's own defaults; extending it is the
+ # documented usage.

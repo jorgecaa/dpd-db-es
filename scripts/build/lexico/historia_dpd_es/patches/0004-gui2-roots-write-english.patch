@@ -1,0 +1,119 @@
+diff --git a/gui2/database_manager.py b/gui2/database_manager.py
+index 900d0608..d9ac8f75 100644
+--- a/gui2/database_manager.py
++++ b/gui2/database_manager.py
+@@ -21,6 +21,7 @@ from db.models import (
+ )
+ from gui2.dpd_fields_functions import clean_lemma_1
+ from gui2.needs_example import is_missing_sutta_example
++from tools import spanish
+ from tools.pali_sort_key import pali_sort_key
+ from tools.paths import ProjectPaths
+ from tools.synonym_variant import RelationshipDetector
+@@ -546,53 +547,61 @@ class DatabaseManager:
+         field values — not a session-tracked object — to avoid autoflush issues.
+         """
+         try:
+-            new_key = root.root
+-
+-            # no_autoflush prevents dirty session objects from being flushed
+-            # before we can query by the original key
+-            with self.db_session.no_autoflush:
+-                existing = (
+-                    self.db_session.query(DpdRoot).filter_by(root=original_key).first()
+-                )
+-                if not existing:
+-                    return (False, f"Root '{original_key}' not found")
+-
+-            if new_key != original_key:
+-                # Build field values: start from existing DB values, override with
+-                # non-None values from root. Transient DpdRoot objects have None for
+-                # unset fields (DB defaults not applied until session flush).
+-                field_values: dict[str, object] = {}
+-                for col in DpdRoot.__table__.columns:
+-                    if col.name in ("created_at", "updated_at"):
+-                        continue
+-                    new_val = getattr(root, col.name)
+-                    field_values[col.name] = (
+-                        new_val if new_val is not None else getattr(existing, col.name)
++            # this copies root columns by name and writes them straight back,
++            # so the overlay must stay off or a translated root_meaning would
++            # be committed into the English column
++            with spanish.suppressed():
++                new_key = root.root
++
++                # no_autoflush prevents dirty session objects from being flushed
++                # before we can query by the original key
++                with self.db_session.no_autoflush:
++                    existing = (
++                        self.db_session.query(DpdRoot)
++                        .filter_by(root=original_key)
++                        .first()
+                     )
++                    if not existing:
++                        return (False, f"Root '{original_key}' not found")
++
++                if new_key != original_key:
++                    # Build field values: start from existing DB values, override with
++                    # non-None values from root. Transient DpdRoot objects have None for
++                    # unset fields (DB defaults not applied until session flush).
++                    field_values: dict[str, object] = {}
++                    for col in DpdRoot.__table__.columns:
++                        if col.name in ("created_at", "updated_at"):
++                            continue
++                        new_val = getattr(root, col.name)
++                        field_values[col.name] = (
++                            new_val
++                            if new_val is not None
++                            else getattr(existing, col.name)
++                        )
++
++                    # 1. Insert new root row first (FK constraint always satisfied)
++                    self.db_session.execute(sa_insert(DpdRoot).values(**field_values))
++
++                    # 2. Cascade root_key update to DpdHeadword (new key now exists in DB)
++                    self.db_session.query(DpdHeadword).filter(
++                        DpdHeadword.root_key == original_key
++                    ).update({"root_key": new_key}, synchronize_session=False)
++
++                    # 3. Delete old root at Core level — bypasses ORM cascade that would
++                    #    nullify root_key on related DpdHeadword objects via relationship
++                    self.db_session.execute(
++                        sa_delete(DpdRoot).where(DpdRoot.root == original_key)
++                    )
++                else:
++                    for col in DpdRoot.__table__.columns:
++                        if col.name not in ("root", "created_at", "updated_at"):
++                            setattr(existing, col.name, getattr(root, col.name))
+ 
+-                # 1. Insert new root row first (FK constraint always satisfied)
+-                self.db_session.execute(sa_insert(DpdRoot).values(**field_values))
+-
+-                # 2. Cascade root_key update to DpdHeadword (new key now exists in DB)
+-                self.db_session.query(DpdHeadword).filter(
+-                    DpdHeadword.root_key == original_key
+-                ).update({"root_key": new_key}, synchronize_session=False)
+-
+-                # 3. Delete old root at Core level — bypasses ORM cascade that would
+-                #    nullify root_key on related DpdHeadword objects via relationship
+-                self.db_session.execute(
+-                    sa_delete(DpdRoot).where(DpdRoot.root == original_key)
+-                )
+-            else:
+-                for col in DpdRoot.__table__.columns:
+-                    if col.name not in ("root", "created_at", "updated_at"):
+-                        setattr(existing, col.name, getattr(root, col.name))
+-
+-            self.db_session.commit()
+-            if new_key != original_key:
+-                # the rename cascaded root_key onto dpd_headwords rows
+-                self.mark_corpus_stale()
+-            return (True, "")
++                self.db_session.commit()
++                if new_key != original_key:
++                    # the rename cascaded root_key onto dpd_headwords rows
++                    self.mark_corpus_stale()
++                return (True, "")
+         except Exception as e:
+             self.db_session.rollback()
+             return (False, str(e))

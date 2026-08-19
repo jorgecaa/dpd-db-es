@@ -1,0 +1,93 @@
+diff --git a/exporter/webapp/templates/dpd_headword.html b/exporter/webapp/templates/dpd_headword.html
+index ac252b8b..c0d1b105 100644
+--- a/exporter/webapp/templates/dpd_headword.html
++++ b/exporter/webapp/templates/dpd_headword.html
+@@ -1046,6 +1046,16 @@
+         </tr>
+         {% endif %}
+ 
++        <tr>
++            <th>DPD inglés</th>
++            <td>{{d.i.meaning_combo_english}}</td>
++        </tr>
++
++        <tr>
++            <th>Fuente</th>
++            <td>{{d.i.spanish_source}}</td>
++        </tr>
++
+         <tr>
+             <th>IPA</th>
+             <td>
+@@ -1319,7 +1329,7 @@
+ 
+     {% if d.i.needs_root_family_button %}
+     <div id="family_root_{{d.i.lemma_1_}}" class="dpd content hidden">
+-        {{d.i.fr.html|safe}}
++        {{d.i.fr.html_es|safe}}
+         <p class="dpd-footer">
+             Something out of place?
+             <a class="dpd-link"
+@@ -1340,7 +1350,7 @@
+             <b>{{d.i.family_word}}</b>
+             family
+         </p>
+-        {{d.i.fw.html|safe}}
++        {{d.i.fw.html_es|safe}}
+         <p class="dpd-footer">
+             Something out of place?
+             <a class="dpd-link"
+@@ -1359,7 +1369,7 @@
+             <b> {{d.fc[0].count}} </b>
+             compounds which contains
+             <b> {{d.fc[0].compound_family}} </b>
+-            {{d.fc[0].html|safe}}
++            {{d.fc[0].html_es|safe}}
+         </p>
+         <p class="dpd-footer">
+             Spot a mistake?
+@@ -1399,7 +1409,7 @@
+             <a class="jump" href="#{{d.i.lemma_1_}}cf_top"> ⤴ </a>
+             {% endif %}
+         </p>
+-        {{f.html|safe}} {% endfor %}
++        {{f.html_es|safe}} {% endfor %}
+         <p class="underline overlined">
+             Back to the top
+             <a class="jump" href="#{{d.i.lemma_1_}}cf_top">⤴</a>
+@@ -1432,7 +1442,7 @@
+             <b>{{f.idiom}}</b>
+             {% endif %}
+         </p>
+-        {{f.html|safe}} {% endfor %}
++        {{f.html_es|safe}} {% endfor %}
+         <p class="dpd-footer">
+             Please add more idioms
+             <a class="dpd-link"
+@@ -1453,7 +1463,7 @@
+             belongs to the set of
+             <b>{{f.set}}</b>
+         </p>
+-        {{f.html|safe}} {% endfor %}
++        {{f.html_es|safe}} {% endfor %}
+         <p class="dpd-footer">
+             Spot a mistake?
+             <a class="dpd-link"
+@@ -1490,7 +1500,7 @@
+             <a class="jump" href="#{{d.i.lemma_1_}}sets_top"> ⤴</a>
+             {% endif %}
+         </p>
+-        {{f.html|safe}} {% endfor %}
++        {{f.html_es|safe}} {% endfor %}
+         <p class="underline overlined">
+             Back to the top
+             <a class="jump" href="#{{d.i.lemma_1_}}sets_top">⤴</a>
+@@ -1514,7 +1524,7 @@
+             belongs to the set of
+             <b>{{f.set}}</b>
+         </p>
+-        {{f.html|safe}} {% endfor %}
++        {{f.html_es|safe}} {% endfor %}
+     </div>
+     {% endif %}
+ 

@@ -1,0 +1,21 @@
+diff --git a/exporter/webapp/main.py b/exporter/webapp/main.py
+index 29cd5dc6..e448cd29 100644
+--- a/exporter/webapp/main.py
++++ b/exporter/webapp/main.py
+@@ -24,6 +24,7 @@ from tools.css_manager import CSSManager
+ from tools.paths import ProjectPaths
+ from tools.pali_text_files import cst_texts
+ from tools.tipitaka_db import search_all_cst_texts, search_books
++from tools import spanish
+ from tools.configger import config_test
+ from tools.translit import auto_translit_to_roman
+ from prometheus_fastapi_instrumentator import Instrumentator
+@@ -66,6 +67,8 @@ with get_db() as db_session:
+ 
+ # Set up templates
+ templates = Jinja2Templates(directory=str(pth.webapp_templates_dir))
++# serves the interface in Spanish when the overlay is on; a no-op otherwise
++spanish.translate_templates(templates)
+ # pyrefly: ignore  # jinja2 leaves Environment.globals unannotated, so its value
+ # type infers as the union of jinja's own defaults; extending it is the
+ # documented usage.
