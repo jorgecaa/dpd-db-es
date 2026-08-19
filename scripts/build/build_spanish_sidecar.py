@@ -275,6 +275,38 @@ def merge_generated(
     return added, filled, replaced
 
 
+def avisar_si_hay_servidor_viejo(sidecar: Path) -> None:
+    """Avisa si hay un webapp sirviendo el sidecar anterior a este.
+
+    El overlay se lee una sola vez, al arrancar el proceso, así que un servidor
+    levantado antes de esta reconstrucción sigue sirviendo lo de antes — y no da
+    ninguna señal: la página responde igual, con datos viejos. Es el fallo que
+    se parece a un éxito, y se ha dado en esta misma casa más de una vez.
+
+    Se busca por `/proc` en vez de por el puerto: no hace falta permiso alguno
+    para leer los procesos propios, y un `uvicorn` en otro puerto tiene el mismo
+    problema.
+    """
+    escrito = sidecar.stat().st_mtime
+    viejos = []
+    for entrada in Path("/proc").iterdir():
+        if not entrada.name.isdigit():
+            continue
+        try:
+            orden = (entrada / "cmdline").read_bytes().decode("utf-8", "replace")
+            if "uvicorn" not in orden or "exporter.webapp" not in orden:
+                continue
+            if entrada.stat().st_mtime < escrito:
+                viejos.append(entrada.name)
+        except OSError:
+            continue  # el proceso murió mientras mirábamos, o no es nuestro
+    if viejos:
+        pr.red(f"hay un webapp ({', '.join(viejos)}) arrancado antes que este sidecar:")
+        pr.red(
+            "sigue sirviendo las traducciones anteriores. Reinícialo con `just webapp`"
+        )
+
+
 def read_source(source_path: Path) -> dict[str, str]:
     """Read the `let dpd_ebts_es = {...}` javascript file as a dict."""
     text = source_path.read_text(encoding="utf-8")
@@ -438,6 +470,7 @@ def main() -> None:
     pr.summary("sanskrit", len(sanskrit))
     pr.summary("notas", len(notes))
     pr.summary("interfaz", len(ui))
+    avisar_si_hay_servidor_viejo(args.output)
     pr.toc()
 
 
