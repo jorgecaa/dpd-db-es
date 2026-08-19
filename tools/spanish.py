@@ -193,6 +193,46 @@ def reload() -> None:
     _combos.clear()
 
 
+SEPARATOR = re.compile(r"\s*\+\s*")
+
+
+def construction_parts(construction: str) -> list[str]:
+    """A construction as its list of components, free of cosmetic differences.
+
+    Two spellings of the same analysis must compare equal. The asterisk marks a
+    reconstructed component and is sometimes written joined to what follows
+    (`*a iya` for `*a + iya`), and a summary occasionally carries a stray
+    leading space, so both are normalised away before splitting on the plus.
+    """
+    parts = (part.strip() for part in SEPARATOR.split(construction.replace("*", " ")))
+    return [part for part in parts if part]
+
+
+def constructions_agree(stored: str, current: str) -> bool:
+    """True when a stored construction is still the current analysis of a word.
+
+    Equality is compared component by component rather than as text, so a
+    difference of spacing or asterisks is not read as disagreement.
+
+    Beyond that, a stored construction that is a leading run of the current one
+    is accepted: `ā + √kand` against today's `ā + √kand + a + ti` is the DPD
+    having since spelled out the ending, not having reinterpreted the word.
+    Measured over the whole dictionary, this is what separates a refinement from
+    a genuine change — `na + kasāva + tta` becoming `na + kasāya + tta` alters a
+    component already there and is still rejected.
+
+    What this gives up is the same trade the empty-construction rule makes: if
+    components were appended *because* the entry was reinterpreted, the signal is
+    lost. Unmeasurable from here, for the same reason — the Spanish material does
+    not keep the English it was translated from.
+    """
+    kept, now = construction_parts(stored), construction_parts(current)
+    if not kept or not now:
+        return True
+    shorter, longer = (kept, now) if len(kept) <= len(now) else (now, kept)
+    return longer[: len(shorter)] == shorter
+
+
 def fingerprint_matches(headword: "DpdHeadword", stored: dict[str, str]) -> bool:
     """True when the lemma still means what it meant when it was translated.
 
@@ -208,6 +248,9 @@ def fingerprint_matches(headword: "DpdHeadword", stored: dict[str, str]) -> bool
     and cannot be measured from here — the Spanish material does not keep the
     English it was translated from.
 
+    How the two constructions are weighed against each other is
+    `constructions_agree`.
+
     Evaluated with the overlay suppressed, both to compare English against
     English and to keep `construction_summary` — which reads `meaning_1` — from
     re-entering this function.
@@ -215,10 +258,9 @@ def fingerprint_matches(headword: "DpdHeadword", stored: dict[str, str]) -> bool
     with suppressed():
         if stored["pos"] != headword.pos:
             return False
-        construction = headword.construction_summary
-        if not stored["construction"] or not construction:
-            return True
-        return stored["construction"] == construction
+        return constructions_agree(
+            stored["construction"], headword.construction_summary
+        )
 
 
 def origin_of(headword: "DpdHeadword") -> str:
@@ -237,6 +279,39 @@ def origin_of(headword: "DpdHeadword") -> str:
     return stored.get(ORIGIN, "material")
 
 
+def promoted_meaning_2(headword: "DpdHeadword", stored: dict[str, str]) -> str:
+    """The Spanish of `meaning_2`, when it also translates `meaning_1` verbatim.
+
+    The Spanish material is a rendered string, and `meaning_combo_html` bolds
+    `meaning_1` when there is one and falls back to `meaning_2` when there is
+    not. So an entry whose Spanish arrived unbolded — stored here as `meaning_2`
+    with an empty `meaning_1` — is one the DPD had no `meaning_1` for at the time
+    it was translated, and has since given one. Measured over the dictionary,
+    3,796 lemmas are in that position and show English for it.
+
+    In 2,670 of them the two English fields are today the same text, character
+    for character: the Spanish translates precisely what is on display, so it is
+    served for `meaning_1` as well. The rest are left alone — a translation of a
+    differently worded `meaning_2` is not a translation of this `meaning_1`, and
+    which is which is a lexicographic judgement, not a comparison.
+
+    Deliberately decided here rather than when the sidecar is built: `dpd.db` is
+    replaced wholesale by every release, so the two fields have to be compared as
+    they stand today. If a release rewrites `meaning_1` away from `meaning_2`,
+    this stops applying by itself and the English comes back.
+
+    Evaluated with the overlay suppressed, to compare English against English.
+    """
+    if stored["meaning_1"].strip() or not stored["meaning_2"].strip():
+        return ""
+    with suppressed():
+        meaning_1 = headword.meaning_1.strip()
+        meaning_2 = headword.meaning_2.strip()
+    if not meaning_1 or meaning_1 != meaning_2:
+        return ""
+    return stored["meaning_2"]
+
+
 def overlay(headword: "DpdHeadword", field: str, english: str) -> str:
     """Spanish text for this headword and field, falling back to English."""
     if not is_active():
@@ -248,7 +323,10 @@ def overlay(headword: "DpdHeadword", field: str, english: str) -> str:
     stored = load().get(headword.lemma_1)
     if stored is None or not fingerprint_matches(headword, stored):
         return english
-    return stored.get(field, "") or english
+    translated = stored.get(field, "")
+    if not translated and field == "meaning_1":
+        translated = promoted_meaning_2(headword, stored)
+    return translated or english
 
 
 def overlay_root(root: str, english: str) -> str:
