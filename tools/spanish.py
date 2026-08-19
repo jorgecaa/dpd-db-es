@@ -193,16 +193,21 @@ def reload() -> None:
     _combos.clear()
 
 
-SEPARATOR = re.compile(r"\s*\+\s*")
+SEPARATOR = re.compile(r"[+\s]+")
 
 
 def construction_parts(construction: str) -> list[str]:
     """A construction as its list of components, free of cosmetic differences.
 
-    Two spellings of the same analysis must compare equal. The asterisk marks a
-    reconstructed component and is sometimes written joined to what follows
-    (`*a iya` for `*a + iya`), and a summary occasionally carries a stray
-    leading space, so both are normalised away before splitting on the plus.
+    Two spellings of the same analysis must compare equal, and the DPD writes
+    the same one several ways: the asterisk marking a reconstructed component
+    is sometimes joined to what follows (`*a iya` for `*a + iya`), a summary can
+    carry a stray leading space, and `construction_summary` returns two lines for
+    a word whose construction has a second reading — `pamukhe\npa + mukha + e`.
+
+    So a component is any run of non-space, non-plus text: whitespace and the
+    plus separate equally. Splitting on the plus alone left `pamukhe\npa` as one
+    component and refused translations over a line break.
     """
     parts = (part.strip() for part in SEPARATOR.split(construction.replace("*", " ")))
     return [part for part in parts if part]
