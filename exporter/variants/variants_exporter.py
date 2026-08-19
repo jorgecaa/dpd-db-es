@@ -6,6 +6,7 @@ import re
 
 from db.db_helpers import get_db_session
 from db.models import Lookup
+from tools import spanish
 from tools.configger import config_read, config_test
 from tools.css_manager import CSSManager
 from tools.goldendict_exporter import (
@@ -78,15 +79,24 @@ def main() -> None:
 
     pr.green_tmr("writing html")
 
+    # los encabezados salen de la tabla de interfaz del sidecar, que es donde
+    # viven todas las cadenas traducibles; en inglés se quedan como estaban
+    encabezados = ["source", "book", "context", "variant"]
+    if spanish.is_active():
+        interfaz = spanish.load_ui()
+        encabezados = [
+            interfaz.get(palabra, {}).get(spanish.UI_COLUMN) or palabra
+            for palabra in encabezados
+        ]
+    fila_encabezados = "<tr>" + "".join(f"<th>{p}</th>" for p in encabezados) + "</tr>"
+
     for word, variant_data in variants_dict.items():
         html_list: list[str] = []
         html_list.append(header)
         html_list.append("<body>")
         html_list.append("<div class='dpd'>")
         html_list.append("<table class='variants'>")
-        html_list.append(
-            "<tr><th>source</th><th>book</th><th>context</th><th>variant</th></tr>"
-        )
+        html_list.append(fila_encabezados)
         html_list.append("<td colspan='100%'><hr class='dpd'></td>")
 
         synonyms_list: list[str] = []
@@ -114,11 +124,14 @@ def main() -> None:
             old_corpus = corpus
 
         html_list.append("</table>")
-        html_list.append("<p class='dpd-footer'>")
-        html_list.append(
-            "For more information, please visit <a class='dpd-link' href='https://digitalpalidictionary.github.io/features/variants/' target='_blank'>this webpage</a>."
-        )
-        html_list.append("</p>")
+        # la capa española no envía a los lectores al proyecto original:
+        # mismo criterio que `spanish.quitar_enlaces_upstream` en las plantillas
+        if not spanish.is_active():
+            html_list.append("<p class='dpd-footer'>")
+            html_list.append(
+                "For more information, please visit <a class='dpd-link' href='https://digitalpalidictionary.github.io/features/variants/' target='_blank'>this webpage</a>."
+            )
+            html_list.append("</p>")
         html_list.append("</div>")
 
         html_list.append("</body>")
@@ -147,12 +160,27 @@ def main() -> None:
         target_lang="pi",
     )
 
+    dict_name = "dpd-variants"
+
+    # la capa española es otro diccionario, no una reconstrucción de este:
+    # los mismos archivos con el mismo nombre pisarían el inglés
+    if spanish.is_active():
+        dict_info = DictInfo(
+            bookname="Variantes del DPD",
+            author="Bodhirasa",
+            description=dict_info.description,
+            website=dict_info.website,
+            source_lang="pi",
+            target_lang="es",
+        )
+        dict_name = "dpd-variants-es"
+
     dict_vars = DictVariables(
         css_paths=[pth.dpd_css_and_fonts_path],
         js_paths=None,
         gd_path=pth.share_dir,
         md_path=pth.share_dir,
-        dict_name="dpd-variants",
+        dict_name=dict_name,
         icon_path=pth.dpd_logo_svg,
         font_path=pth.fonts_dir,
     )

@@ -4,6 +4,7 @@
 
 from db.db_helpers import get_db_session
 from db.models import Lookup
+from tools import spanish
 from tools.configger import config_read, config_test
 from tools.goldendict_exporter import (
     DictEntry,
@@ -119,8 +120,17 @@ def make_deconstructor_dict_data(g: GlobalVars) -> None:
 def prepare_and_export_to_gd_mdict(g: GlobalVars) -> None:
     """Prepare data to export to GoldenDict using pyglossary."""
 
-    dict_info1 = _make_dict_info("DPD Deconstructor")
-    dict_vars1 = _make_dict_vars("dpd-deconstructor", g.pth)
+    # la capa española es otro diccionario, no una reconstrucción de este:
+    # los mismos archivos con el mismo nombre pisarían el inglés
+    if spanish.is_active():
+        bookname1, name1 = "Deconstructor del DPD", "dpd-deconstructor-es"
+        bookname2, name2 = "Deconstructor del DPD 2", "dpd-deconstructor2-es"
+    else:
+        bookname1, name1 = "DPD Deconstructor", "dpd-deconstructor"
+        bookname2, name2 = "DPD Deconstructor2", "dpd-deconstructor2"
+
+    dict_info1 = _make_dict_info(bookname1)
+    dict_vars1 = _make_dict_vars(name1, g.pth)
 
     # the deconstructor is too large for goldendict, so needs to be split in two.
     # find the halfway mark to use as a split point
@@ -130,8 +140,8 @@ def prepare_and_export_to_gd_mdict(g: GlobalVars) -> None:
         dict_info1, dict_vars1, g.dict_data[:half], include_slob=g.make_slob
     )
 
-    dict_info2 = _make_dict_info("DPD Deconstructor2")
-    dict_vars2 = _make_dict_vars("dpd-deconstructor2", g.pth)
+    dict_info2 = _make_dict_info(bookname2)
+    dict_vars2 = _make_dict_vars(name2, g.pth)
 
     export_to_goldendict_with_pyglossary(
         dict_info2, dict_vars2, g.dict_data[half:], include_slob=g.make_slob

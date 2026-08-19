@@ -4,6 +4,7 @@
 
 from db.db_helpers import get_db_session
 from db.models import Lookup
+from tools import spanish
 from tools.configger import config_read, config_test
 from tools.goldendict_exporter import (
     DictEntry,
@@ -127,6 +128,19 @@ def prepare_gd_mdict_and_export(g: GlobalVars) -> None:
         target_lang="en",
     )
     dict_name = "dpd-grammar"
+
+    # la capa española es otro diccionario, no una reconstrucción de este:
+    # los mismos archivos con el mismo nombre pisarían el inglés
+    if spanish.is_active():
+        dict_info = DictInfo(
+            bookname="Gramática del DPD",
+            author="Bodhirasa",
+            description=dict_info.description,
+            website=dict_info.website,
+            source_lang="pi",
+            target_lang="es",
+        )
+        dict_name = "dpd-grammar-es"
 
     dict_vars = DictVariables(
         css_paths=[g.pth.dpd_css_and_fonts_path],
