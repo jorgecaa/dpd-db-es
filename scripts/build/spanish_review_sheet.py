@@ -24,6 +24,10 @@ Usage:
 
 import argparse
 import json
+import re
+import shutil
+import zipfile
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +49,10 @@ from tools.paths import ProjectPaths
 from tools.printer import printer as pr
 
 REGISTRO = Path("scripts/build/generado_es_registro.jsonl")
-SALIDA = Path("temp/revision_es.xlsx")
+SALIDA = Path("scripts/build/revision_es.xlsx")
+# Fecha fija en el libro y en el zip: ver `guardar_estable`.
+EPOCA = datetime(2026, 1, 1)
+MODIFICADO = re.compile(rb">[^<]+</dcterms:modified>")
 
 # Wrong first: those need a decision. Doubtful next: those need an opinion. The
 # rest are here only because translator and auditor read the grammar differently.
@@ -182,7 +189,40 @@ def escribir(filas: list[dict[str, Any]], destino: Path) -> None:
 
     hoja.auto_filter.ref = hoja.dimensions
     destino.parent.mkdir(parents=True, exist_ok=True)
+    libro.properties.created = EPOCA
+    libro.properties.modified = EPOCA
     libro.save(destino)
+    guardar_estable(destino)
+
+
+def guardar_estable(destino: Path) -> None:
+    """Reescribe el `.xlsx` con fechas fijas, para que sea versionable.
+
+    Un `.xlsx` es un zip, y la hora actual se cuela por tres sitios: cada entrada
+    del zip, y dentro de `docProps/core.xml` las marcas de creación y de
+    modificación. La de modificación la reescribe openpyxl al guardar, por
+    encima de lo que se le fije antes, así que hay que corregirla aquí.
+
+    Sin esto, regenerar la hoja con los mismos datos produce bytes distintos, y
+    el repositorio pide justo lo contrario de un archivo de datos generado: que
+    una regeneración no ensucie el diff.
+    """
+    marca = EPOCA.strftime("%Y-%m-%dT%H:%M:%SZ")
+    temporal = destino.with_suffix(".xlsx.tmp")
+    fecha = (EPOCA.year, EPOCA.month, EPOCA.day, 0, 0, 0)
+    with zipfile.ZipFile(destino) as origen:
+        with zipfile.ZipFile(temporal, "w", zipfile.ZIP_DEFLATED) as copia:
+            for nombre in sorted(origen.namelist()):
+                contenido = origen.read(nombre)
+                if nombre == "docProps/core.xml":
+                    contenido = MODIFICADO.sub(
+                        f">{marca}</dcterms:modified>".encode(), contenido
+                    )
+                info = zipfile.ZipInfo(nombre, date_time=fecha)
+                info.compress_type = zipfile.ZIP_DEFLATED
+                info.external_attr = 0o600 << 16
+                copia.writestr(info, contenido)
+    shutil.move(temporal, destino)
 
 
 def main() -> None:
