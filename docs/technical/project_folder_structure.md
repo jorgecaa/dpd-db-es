@@ -5,6 +5,8 @@ Where are all the parts of the project located?
 .
 ├── archive
 ├── audio
+├── c_modules
+│   └── goldendict
 ├── conductor
 ├── db
 │   ├── backup_tsv
@@ -89,6 +91,10 @@ There are four main parts to the code:
 - **archive/** Retired code kept for reference only. Excluded from linting and type checking.
 
 - **audio/** Text-to-speech audio generation and release.
+
+- **c_modules/** When even Go is not close enough to the metal — a C pilot of the GoldenDict
+  exporter (`goldendict/`, with a Rust minifier in `goldendict/minificador/`). Built with
+  `make`, run from the project root. See its `README.md`.
 
 - **conductor/** Product and tech-stack specs — `product.md` (vision, features, audience, release schedule) and `tech-stack.md` (full technology stack and key libraries).
 

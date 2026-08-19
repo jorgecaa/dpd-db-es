@@ -226,7 +226,7 @@ from tools.configger import config_read, config_update, config_test
 - `config_test(section, option, value)` — returns `bool`
 
 ### Known sections
-`version`, `regenerate`, `deconstructor`, `gui`, `goldendict`, `dictionary`, `exporter`, `apis`, `anki`, `simsapa`, `tpr`
+`version`, `regenerate`, `deconstructor`, `gui`, `goldendict`, `dictionary`, `exporter`, `apis`, `anki`, `simsapa`, `tpr`, `spanish`
 
 ### Example
 ```python
