@@ -28,7 +28,9 @@ from tools import spanish
 from tools.printer import printer as pr
 from tools.spanish import (
     COLUMNS,
+    FIELDS,
     FINGERPRINT,
+    constructions_agree,
     ROOT_COLUMNS,
     ROOT_TABLE,
     SANSKRIT_COLUMN,
@@ -209,7 +211,7 @@ def read_entries(tsv_path: Path) -> dict[str, dict[str, str]]:
 
 def merge_generated(
     entries: dict[str, dict[str, str]], extra: dict[str, dict[str, str]]
-) -> tuple[int, int]:
+) -> tuple[int, int, int]:
     """Fold generated translations into the material, never overwriting it.
 
     A lemma the material does not have is added whole. A lemma it does have is
@@ -223,19 +225,41 @@ def merge_generated(
     1,126 lemmas are in that position and show English. Adding whole lemmas only,
     as this did before, could never reach them.
 
-    The fingerprint is left as the material wrote it: it records the lemma as it
-    stood when a human translated it, and a generated field is not evidence about
-    that. A row with no fingerprint at all takes the generated one, since there
-    is nothing to preserve.
+    Where the two disagree about the lemma itself — a different part of speech, a
+    construction that is not the same analysis — the material's fingerprint has
+    gone stale, and `tools/spanish.py` is already refusing that whole row. Filling
+    a hole in it would write a translation nobody can ever see: measured, 495 of
+    1,988 landed exactly there. So a stale row is replaced outright by the
+    generated one, carrying today's fingerprint.
 
-    Returns how many lemmas were added and how many fields were filled.
+    Replacing drops the material's other fields for that lemma, and that is the
+    point rather than a cost: they are refused already, and keeping them under a
+    refreshed fingerprint would put translations back on display that the drift
+    check had deliberately taken down. Nothing is lost for good either way — the
+    material is re-read from source on every build, so a lemma the DPD later
+    changes back is judged afresh.
+
+    The generated fields carry today's values because that is what they were
+    translated from, which is why they may stamp the fingerprint at all.
+
+    Returns how many lemmas were added, how many fields filled, how many rows
+    replaced.
     """
-    added = filled = 0
+    added = filled = replaced = 0
     for lemma, fields in extra.items():
         current = entries.get(lemma)
         if current is None:
             entries[lemma] = {**fields, ORIGIN: GENERATED}
             added += 1
+            continue
+        stale = current.get("pos", "") != fields.get(
+            "pos", ""
+        ) or not constructions_agree(
+            current.get("construction", ""), fields.get("construction", "")
+        )
+        if stale and any(fields.get(column, "").strip() for column in FIELDS):
+            entries[lemma] = {**fields, ORIGIN: GENERATED}
+            replaced += 1
             continue
         for column in COLUMNS:
             if current.get(column, "").strip() or not fields.get(column, "").strip():
@@ -246,7 +270,7 @@ def merge_generated(
                 continue
             current[column] = fields[column]
             filled += 1
-    return added, filled
+    return added, filled, replaced
 
 
 def read_source(source_path: Path) -> dict[str, str]:
@@ -355,11 +379,13 @@ def main() -> None:
         ("compuestos por reuso", args.compounds),
         ("traducidas", args.generated),
     ):
-        added, filled = merge_generated(entries, read_entries(path))
+        added, filled, replaced = merge_generated(entries, read_entries(path))
         if added:
             pr.summary(f"{label}, lemas nuevos", added)
         if filled:
             pr.summary(f"{label}, huecos rellenados", filled)
+        if replaced:
+            pr.summary(f"{label}, filas caducadas sustituidas", replaced)
 
     # after the corrections, so a fingerprint still compares against the text as
     # upstream wrote it, markers and all
