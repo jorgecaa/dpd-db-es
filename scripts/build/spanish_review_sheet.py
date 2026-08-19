@@ -308,7 +308,18 @@ def main() -> None:
 
     db_session = get_db_session(ProjectPaths().dpd_db_path)
     filas = recoger(db_session, registros)
-    pr.summary("a revisar", len(filas))
+    pr.summary("señaladas por la auditoría", len(filas))
+
+    # Lo decidido se queda en la hoja y solo se cuenta aparte. Sacarlo se muerde
+    # la cola: al filtrarlo desaparece la constancia de que estaba decidido, y a
+    # la siguiente regeneración vuelve a entrar como si nadie lo hubiera visto —
+    # probado, y de paso se llevó por delante 183 decisiones. Lo que estaba mal
+    # era la cifra, que anunciaba 187 por revisar con 183 ya resueltas.
+    previas = decisiones_previas(args.out)
+    decididas = sum(1 for decision, _ in previas.values() if decision)
+    if decididas:
+        pr.summary("ya decididas", decididas)
+    pr.summary("PENDIENTES", len(filas) - decididas)
     for veredicto in ("incorrecta", "dudosa", "correcta"):
         cuantas = sum(1 for f in filas if f["veredicto"] == veredicto)
         if cuantas:
