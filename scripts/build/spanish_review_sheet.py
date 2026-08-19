@@ -33,6 +33,7 @@ from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -58,7 +59,21 @@ MODIFICADO = re.compile(rb">[^<]+</dcterms:modified>")
 # rest are here only because translator and auditor read the grammar differently.
 ORDEN = {"incorrecta": 0, "dudosa": 1, "correcta": 2}
 
+# Las dos primeras son para escribir; el resto, para leer. Van delante porque
+# son a lo que se viene, y porque una columna de decisión al final de once se
+# rellena a medias.
+DECISION = "tu decisión"
+TEXTO = "tu texto"
+OPCIONES = (
+    "acepto la propuesta",
+    "acepto la del auditor",
+    "escribo otra",
+    "dejar en inglés",
+)
+
 COLUMNAS = (
+    (DECISION, 22),
+    (TEXTO, 46),
     ("lema", 20),
     ("gram", 16),
     ("inglés del DPD", 46),
@@ -163,8 +178,44 @@ def recoger(db_session, registros: list[dict]) -> list[dict[str, Any]]:
     return filas
 
 
+def decisiones_previas(destino: Path) -> dict[str, tuple[str, str]]:
+    """Lo que ya haya escrito una persona en la hoja, por lema.
+
+    Sin esto, `just spanish-sheet` sobrescribiría el trabajo de revisión con una
+    hoja en blanco, en silencio y sin manera de recuperarlo: la regeneración es
+    barata y las decisiones no. Se recuperan por lema y no por posición, para que
+    reordenar la cola o retraducir una entrada no descoloque lo decidido.
+    """
+    if not destino.exists():
+        return {}
+    from openpyxl import load_workbook
+
+    hoja = load_workbook(destino).active
+    if hoja is None:
+        return {}
+    cabecera = [celda.value for celda in hoja[1]]
+    try:
+        i_decision, i_texto = cabecera.index(DECISION), cabecera.index(TEXTO)
+        i_lema = cabecera.index("lema")
+    except ValueError:
+        return {}
+    previas = {}
+    for fila in hoja.iter_rows(min_row=2, values_only=True):
+        # Una celda de Excel puede traer cualquier cosa: número, fecha, fórmula.
+        decision = str(fila[i_decision] or "").strip()
+        texto = str(fila[i_texto] or "").strip()
+        if decision or texto:
+            previas[fila[i_lema]] = (decision, texto)
+    return previas
+
+
 def escribir(filas: list[dict[str, Any]], destino: Path) -> None:
     """The sheet itself: frozen header, wrapped text, a colour per verdict."""
+    previas = decisiones_previas(destino)
+    for fila in filas:
+        decision, texto = previas.get(fila["lema"], ("", ""))
+        fila[DECISION], fila[TEXTO] = decision, texto
+
     libro = Workbook()
     hoja: Worksheet = libro.active  # pyright: ignore[reportAssignmentType]
     hoja.title = "revisión"
@@ -179,13 +230,23 @@ def escribir(filas: list[dict[str, Any]], destino: Path) -> None:
         hoja.append([fila.get(nombre, "") for nombre, _ in COLUMNAS])
         color = COLORES.get(fila["veredicto"])
         if color:
-            hoja.cell(row=hoja.max_row, column=7).fill = color
+            hoja.cell(
+                row=hoja.max_row, column=COLUMNAS.index(("veredicto", 12)) + 1
+            ).fill = color
 
     for indice, (_, ancho) in enumerate(COLUMNAS, start=1):
         hoja.column_dimensions[get_column_letter(indice)].width = ancho
     for fila_celdas in hoja.iter_rows(min_row=2):
         for celda in fila_celdas:
             celda.alignment = Alignment(wrap_text=True, vertical="top")
+
+    # Un desplegable en «tu decisión»: cierra el vocabulario sin obligar a
+    # recordarlo, y deja que un script lea después la hoja sin interpretar prosa.
+    validacion = DataValidation(
+        type="list", formula1='"' + ",".join(OPCIONES) + '"', allow_blank=True
+    )
+    hoja.add_data_validation(validacion)
+    validacion.add(f"A2:A{hoja.max_row}")
 
     hoja.auto_filter.ref = hoja.dimensions
     destino.parent.mkdir(parents=True, exist_ok=True)
@@ -248,7 +309,11 @@ def main() -> None:
         if cuantas:
             pr.summary(veredicto, cuantas)
 
+    previas = decisiones_previas(args.out)
+    conservadas = sum(1 for f in filas if f["lema"] in previas)
     escribir(filas, args.out)
+    if conservadas:
+        pr.summary("decisiones conservadas", conservadas)
     pr.summary("escrito", str(args.out))
     pr.toc()
 
