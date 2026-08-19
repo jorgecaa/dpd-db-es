@@ -9,6 +9,7 @@ Where are all the parts of the project located?
 │   └── goldendict
 ├── conductor
 ├── db
+│   ├── app
 │   ├── backup_tsv
 │   ├── bold_definitions
 │   ├── epd
@@ -24,6 +25,8 @@ Where are all the parts of the project located?
 │   └── single
 ├── docs
 ├── exporter
+│   ├── analysis
+│   ├── anki
 │   ├── apple_dictionary
 │   ├── chrome_extension
 │   ├── deconstructor
@@ -37,7 +40,9 @@ Where are all the parts of the project located?
 │   ├── share
 │   ├── sutta_central
 │   ├── tbw
+│   ├── tester
 │   ├── tpr
+│   ├── txt
 │   ├── variants
 │   ├── webapp
 │   └── wxt_extension
@@ -45,6 +50,7 @@ Where are all the parts of the project located?
 │   ├── deconstructor
 │   ├── dpdDb
 │   ├── frequency
+│   ├── test
 │   ├── tools
 ├── gui2
 ├── identity
@@ -58,10 +64,8 @@ Where are all the parts of the project located?
 ├── resources
 ├── scripts
 │   ├── add
-│   ├── archive
 │   ├── bash
 │   ├── build
-│   ├── cl
 │   ├── export
 │   ├── extractor
 │   ├── find
@@ -69,6 +73,8 @@ Where are all the parts of the project located?
 │   ├── info
 │   ├── onboarding
 │   ├── patch
+│   ├── project_management
+│   ├── repo_maintenance
 │   ├── server
 │   ├── suttas
 │   ├── tutorial
@@ -104,6 +110,8 @@ There are four main parts to the code:
 
     - **db_helpers.py** Helper functions to make create the database, get a session, get column names, etc.
 
+    - **app/** Standalone script (not wired into any `just` recipe or the build pipeline) that copies `dpd_headwords` and `lookup` into a slim SQLite file for the external `dpd-app` project.
+
     - **backup_tsv/** TSV backups of the database source tables
 
     - **bold_definitions/** Extract bold definitions from CST texts and compile for easy searching.
@@ -138,6 +146,10 @@ There are four main parts to the code:
 
 - **exporter/** Export the DPD database into various formats.
 
+	- **analysis/** Analyse a Pāḷi passage word by word against the db (lookup + headwords), with optional AI translation, and export the results to CSV.
+
+	- **anki/** Push DPD data into Anki decks — update notes directly in a live collection and export a standalone `.apkg`.
+
 	- **apple_dictionary/** Export DPD for Apple Dictionary.
 
 	- **chrome_extension/** Export DPD as a Chrome browser extension.
@@ -158,11 +170,17 @@ There are four main parts to the code:
 
 	- **pdf/** Export DPD to PDF format.
 
+	- **share/** Output directory, not code — every exporter writes its finished dictionaries, zips and tarballs here (see `share_dir` in `tools/paths.py`).
+
 	- **sutta_central/** Export DPD data for SuttaCentral integration.
 
 	- **tbw/** Export a light version of DPD for integration into [The Buddha's Words website](https://thebuddhaswords.net/mn/mn1.html){target="_blank"}.
 
+	- **tester/** Sandbox for rapid prototyping — builds a one-entry dummy dictionary so layout, component and CSS changes can be checked without a full rebuild. See its `README.md`.
+
 	- **tpr/** Export DPD grammar deconstructor data for integration into Tipitaka Pali Reader app
+
+	- **txt/** Export the whole dictionary as plain text — for screen readers, grep/sed analysis and long-term archival. See its `README.md`.
 
 	- **variants/** Export variant readings data.
 
@@ -177,6 +195,8 @@ There are four main parts to the code:
 	- **dpdDb/** Access the database using GORM
 
 	- **frequency/** Generate frequency tables and data lists for every word
+
+	- **test/** Scratch `main` package for exercising the Go helpers in `tools/`.
 
 	- **tools/** GO packages used across the project
 
