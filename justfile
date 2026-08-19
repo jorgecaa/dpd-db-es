@@ -112,6 +112,10 @@ typecheck:
 version:
     uv run python tools/version.py
 
+# Restore a clone to a working Spanish dictionary and check that it answers
+restore:
+    uv run python scripts/onboarding/restore.py
+
 # Spanish overlay: rebuild dpd_es.db from the vendored material
 spanish-sidecar:
     uv run python scripts/build/build_spanish_sidecar.py --source resources/dpd-dictionary-es/js/dpd_ebts_es.js
