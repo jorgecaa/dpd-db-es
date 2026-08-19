@@ -112,6 +112,10 @@ typecheck:
 version:
     uv run python tools/version.py
 
+# Spanish overlay: rebuild dpd_es.db from the vendored material
+spanish-sidecar:
+    uv run python scripts/build/build_spanish_sidecar.py --source resources/dpd-dictionary-es/js/dpd_ebts_es.js
+
 # Spanish overlay: gather the headwords still showing English
 spanish-pending dir="temp/spanish":
     uv run python scripts/build/spanish_pending.py --out-dir {{dir}}

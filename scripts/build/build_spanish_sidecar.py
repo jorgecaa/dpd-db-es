@@ -52,6 +52,8 @@ UI_TSV = Path(__file__).parent / "webapp_ui_es.tsv"
 NOTES_TSV = Path(__file__).parent / "notes_es.tsv"
 COMPOUNDS_TSV = Path(__file__).parent / "compounds_es.tsv"
 GENERATED_TSV = Path(__file__).parent / "generado_es.tsv"
+# The published Spanish, vendored so a clone can rebuild the sidecar on its own.
+MATERIAL_JS = Path("resources/dpd-dictionary-es/js/dpd_ebts_es.js")
 
 POS_PATTERN = re.compile(r"^(?P<pos>[^.]{1,20})\.\s+")
 BOLD_PATTERN = re.compile(r"^<b>(?P<meaning>.*?)</b>(?P<rest>.*)$", re.DOTALL)
@@ -332,7 +334,10 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--source", required=True, type=Path, help="path to dpd_ebts_es.js"
+        "--source",
+        type=Path,
+        default=MATERIAL_JS,
+        help="path to dpd_ebts_es.js",
     )
     parser.add_argument("--roots", type=Path, help="path to dpd_roots.js")
     parser.add_argument("--sanskrit", type=Path, default=SANSKRIT_TSV)
