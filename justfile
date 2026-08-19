@@ -128,6 +128,10 @@ spanish-pending dir="temp/spanish":
 spanish-translate dir="temp/spanish" workers="1":
     uv run python scripts/build/spanish_translate.py --batches {{dir}} --workers {{workers}}
 
+# Spanish overlay: fold the reviewed sheet back into the translations
+spanish-apply:
+    uv run python scripts/build/spanish_apply_review.py
+
 # Spanish overlay: the review queue as a spreadsheet, for a person to decide
 spanish-sheet:
     uv run python scripts/build/spanish_review_sheet.py
