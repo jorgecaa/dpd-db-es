@@ -112,6 +112,18 @@ typecheck:
 version:
     uv run python tools/version.py
 
+# Spanish overlay: gather the headwords still showing English
+spanish-pending dir="temp/spanish":
+    uv run python scripts/build/spanish_pending.py --out-dir {{dir}}
+
+# Spanish overlay: translate and audit the batches (costs AI requests)
+spanish-translate dir="temp/spanish" workers="1":
+    uv run python scripts/build/spanish_translate.py --batches {{dir}} --workers {{workers}}
+
+# Spanish overlay: check against the audit and split accepted from to-review
+spanish-review dir="temp/spanish" out="temp/spanish":
+    uv run python scripts/build/spanish_review.py --batches {{dir}} --out {{out}}
+
 # Start the webapp server
 webapp:
     uv run uvicorn exporter.webapp.main:app --host 0.0.0.0 --port 8080 --reload --reload-dir exporter/webapp

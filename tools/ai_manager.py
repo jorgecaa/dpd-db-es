@@ -57,6 +57,7 @@ class AIManager:
 
         from tools.ai_claude_manager import ClaudeManager
         from tools.ai_deepseek_manager import DeepseekManager
+        from tools.ai_deepseek_manager import resolve_api_key as resolve_deepseek_key
         from tools.ai_gemini_manager import GeminiManager
         from tools.ai_gpt_manager import GptManager
         from tools.ai_nvidia import NvidiaManager
@@ -81,7 +82,7 @@ class AIManager:
         else:
             pr.amber("Z.ai API key not found, manager not initialized.")
 
-        if config_read("apis", "deepseek"):
+        if resolve_deepseek_key():
             self.providers["deepseek"] = DeepseekManager()
             pr.green("deepseek initialized")
         else:

@@ -1,6 +1,7 @@
 """Send AI requests to the DeepSeek API, check the account balance and list available models. Used by tools/ai_manager.py as the 'deepseek' provider."""
 
 import json
+import os
 from typing import Any, cast
 
 import requests
@@ -10,6 +11,19 @@ from tools.configger import config_read
 from tools.printer import printer as pr
 
 DEFAULT_API_KEY_NAME = "deepseek"
+ENV_API_KEY = "DEEPSEEK_API_KEY"
+
+
+def resolve_api_key(api_key_name: str = DEFAULT_API_KEY_NAME) -> str | None:
+    """The DeepSeek key, from `config.ini` or else from the environment.
+
+    `config.ini` is where this project keeps its keys, but a key exported from a
+    shell profile is just as usable and is where this machine actually holds it.
+    Config wins when both are set, so an explicit entry still overrides whatever
+    the shell happens to carry.
+    """
+    return config_read("apis", api_key_name) or os.environ.get(ENV_API_KEY) or None
+
 
 DS_BALANCE = "https://api.deepseek.com/user/balance"
 DS_CHAT = "https://api.deepseek.com/chat/completions"
@@ -50,9 +64,12 @@ def _format_empty_content_status(response_json: dict[str, Any]) -> str:
 
 class DeepseekManager:
     def __init__(self, api_key_name: str = DEFAULT_API_KEY_NAME) -> None:
-        api_key = config_read("apis", api_key_name)
+        api_key = resolve_api_key(api_key_name)
         if not api_key:
-            pr.amber(f"DeepSeek API key '{api_key_name}' not found in config.ini")
+            pr.amber(
+                f"DeepSeek API key not found: neither '{api_key_name}' in config.ini "
+                f"nor ${ENV_API_KEY} in the environment"
+            )
             self.api_key = None
             self.api_key_name = api_key_name
             return
