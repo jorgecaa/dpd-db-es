@@ -50,11 +50,17 @@ PROBE = "akatayogga"
 
 
 def ensure_environment() -> bool:
-    """Install the dependencies, or say what is missing to."""
+    """Install the dependencies, or say what is missing to.
+
+    `--all-groups` because a bare `uv sync` makes the environment match the
+    default group *exactly*, which prunes whatever the other groups installed:
+    running it here once removed `github` and `miniaudio` and left `audio/`
+    unimportable, so a restore that was meant to fix a machine broke one.
+    """
     pr.green_tmr("dependencias")
     try:
         result = subprocess.run(
-            ["uv", "sync"], capture_output=True, text=True, check=False
+            ["uv", "sync", "--all-groups"], capture_output=True, text=True, check=False
         )
     except FileNotFoundError:
         pr.no("falta uv")
