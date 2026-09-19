@@ -32,6 +32,23 @@ order below is by value per unit of risk, not by size of the prize.
 5. Every `load_only` uses the columns the templates actually read — no guessing: task
    1.1 produces the list, and the oracle plus a loud-failure test keep it honest.
 
+## Phase 0 — Reconnaissance and the throwaway benchmark (DONE 2026-09-18)
+
+- [x] **0.1** Size baseline per table and per column from the live db.
+- [x] **0.2** Runtime usage audit (`audit_columns.py`) over 30 mixed requests,
+      cross-checked against a static grep of the webapp's code and templates.
+- [x] **0.3** Throwaway-copy benchmark (`build_trimmed_copy.py`): copy to `/tmp`, drop
+      the 11 never-referenced columns, `VACUUM`. → **2180.7 → 1470.1 MiB, 710.6 MiB
+      saved (32.6 %), 67 s of build time.**
+- [x] **0.4** Serve the trimmed copy and run the oracle — the step that decides the
+      shape of the work. → **125 of 130 responses became `Internal Server Error`**:
+      `no such column: lookup.rpd`, because SQLAlchemy selects every column the model
+      declares. Recorded in the spec as the finding that blocks the naive plan.
+- [x] **0.5** Per-page attribution of the two call sites, plus the parameter-limit
+      check. → member loads 283 KiB cold / 0 warm; family HTML 13,865 KiB (99 % of the
+      page); SQLite ceiling here is 32,766, so the batching shipped as a portability
+      guard, not a bug fix (spec addendum).
+
 ## The call-site inventory (Phase 1's working list, measured 2026-09-19)
 
 Ten entity loads are reachable from a webapp request. Column sets marked *inventory*
