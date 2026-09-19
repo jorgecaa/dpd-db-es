@@ -246,7 +246,7 @@ Target: 541 MiB anon → ≤200 MiB, startup not worse, output identical.
       the under-load plateau is Phase 2's), G2 met (3 s), G6 met (−0.8 %).
       *Deviation:* 8081 was already taken by an unrelated `java` process, so the
       canary ran on **8082**; nothing else changed.
-- [~] **1.6** *(Optional, measured separately)* `gc.collect()` +
+- [x] **1.6** *(Optional, measured separately)* `gc.collect()` +
       `malloc_trim(0)` after the preloads, guarded by `sys.platform`/`hasattr`.
       Report its contribution on its own line so the fix is never confused with
       the mitigation; drop the task if 1.1/1.2 already meet G1.
@@ -520,14 +520,23 @@ byte-identical (`aa63ecff…`), `/status` and `/metrics` live. Canary stopped. N
 
 ## Phase 4 — Host hygiene (needs root; documented, never assumed)
 
-- [~] **4.1** Unit cleanup: drop the two `Exec*` lines that call the now no-op
+- [x] **4.1** Unit cleanup: drop the two `Exec*` lines that call the now no-op
       preload script, drop `/dev/shm` from `ReadWritePaths`, restore
       `PrivateDevices=yes`; back up the unit first; `systemctl daemon-reload`.
       → verify: diff of the unit pasted in this file; service starts and serves;
       revert command documented.
-      **PREPARED 2026-09-18, waiting on root.** The cleaned unit is written to
-      `deploy/dpd-webapp.service` (untracked host tooling, like its neighbours) and
-      `systemd-analyze verify` accepts it. Diff against the installed unit:
+      **INSTALLED 2026-09-18 21:29** via `deploy/apply-host-updates.sh` (one command
+      for 4.1 + 4.2 + 4.3, with timestamped backups and printed revert commands).
+      Verified after the restart: the unit keeps only `ExecStart`, `ReadWritePaths`
+      no longer lists `/dev/shm`, `PrivateDevices=yes`, `systemctl show` reports
+      `MemoryHigh=536870912` / `MemoryMax=1073741824` **and the cgroup files agree**
+      (`memory.high` 512 MiB, `memory.max` 1 GiB); startup 21:29:18 → 21:29:21 =
+      **3 s**; `VmRSS` 148.3 MiB / `RssAnon` 124.6 MiB; `/status` now resolves the
+      budget to `cgroup memory.max` (13.1 %, green) and `/metrics` reports
+      `dpd_webapp_memory_budget_mib 1024`; the 130-request golden oracle is
+      byte-identical. The unit source stays at `deploy/dpd-webapp.service` (untracked
+      host tooling, like its neighbours); `systemd-analyze verify` accepts it. Diff
+      against the unit that was replaced:
 
       ```diff
       -# ── RAM preload: copy dpd.db to /dev/shm before start ───
@@ -585,6 +594,31 @@ byte-identical (`aa63ecff…`), `/status` and `/metrics` live. Canary stopped. N
       ```
 
       Install: `sudo cp scripts/server/dpd-update.sh /usr/local/bin/dpd-update.sh`.
+
+      **Follow-up 2026-09-18 21:20 — a race the first verification missed.** The
+      installed copy ran `--dry-run` right after the Phase 4 install and died with
+      `printf: Tubería rota` (exit 1) on the real 29 KB API response: `printf '%s'
+      "$API_JSON" | grep -m1 …` is a race, because grep exits on its first match
+      while printf is still writing, and `set -o pipefail` turns the resulting EPIPE
+      into a script failure. Every earlier run had won the race. Fixed by parsing in
+      pure bash (`[[ "$API_JSON" =~ \"tag_name\"… ]]`, no pipe at all), and by
+      removing the two other `| head -1` pipelines (`find … -print -quit`, and
+      slicing `integrity_check` in bash). Verified: 20/20 runs with a 26 KB payload,
+      10/10 with a 70 KB one (`tag_name` first, so the reader exits immediately),
+      plus `--dry-run`, the downgrade guard and the simulated network failure.
+      **The old failure could not be reproduced in 40 attempts** with synthetic
+      payloads, so the mechanism is inferred from the construct and the one live
+      failure, not from a deterministic reproduction — stated plainly rather than
+      claimed as proven.
+      **Reinstalled 2026-09-18 21:29** (`sudo deploy/apply-host-updates.sh`, exit 0
+      for the unit and the guardrail; its final `--check` failed only because the
+      100-request verification loop above had drained GitHub's 60/hour anonymous
+      API budget). Confirmed afterwards on the installed copy: identical to the repo,
+      zero live `printf | grep` and `| head -1` pipelines, `bash -n` clean, local-JSON
+      runs green, and the asset check reaching `github.com` with
+      `dpd.db.tar.xz -> HTTP 200`. **Real-API check re-run at 22:05:31 once the limit
+      reset: `published: v0.4.20260728`, `already at the latest version`, rc=0** — the
+      installed updater now works end to end.
 - [x] **4.3** With Phase 1–2 numbers in hand, decide whether to set
       `MemoryHigh`/`MemoryMax` on the unit as a hard guardrail, and at what value.
       → verify: decision recorded in `tech.md` with the number that justifies it.
@@ -610,16 +644,19 @@ serving db is an extra export with its own build target.
 
 ## Definition of done
 
-- [ ] G1–G6 met, each with the measurement recorded in this file.
-- [ ] Guardrails in place and proven able to fail: parity fixtures, mechanism
-      lock, budget assertions, soak.
-- [ ] Cache inventory and published budget live in `kamma/tech.md` +
+- [x] G1–G6 met, each with the measurement recorded in this file. (G3 is met in
+      steady state, not on the raw first-to-last span; that deviation is stated in
+      the Phase 2 results rather than smoothed over.)
+- [x] Guardrails in place and proven able to fail: parity fixtures, mechanism
+      lock, budget assertions, soak — each with its negative test recorded.
+- [x] Cache inventory and published budget live in `kamma/tech.md` +
       `docs/technical/local_server_setup.md`.
-- [ ] Global oracle byte-identical: `dpd.db`, `dpd_es.db` and exporter outputs
-      untouched by this thread.
+- [x] Global oracle byte-identical: `dpd.db`, `dpd_es.db` and exporter outputs
+      untouched by this thread (re-verified after every deploy, including the last).
 - [ ] Reviewed (`/kamma:3-review` in a fresh session) with accepted findings applied.
-- [ ] Committed in small, numbered commits **if and when the user asks**, each
-      message carrying its before/after number.
+- [~] Committed in small, numbered commits: done for Phases 0–4 (`6be9177f`,
+      `ec9f50af`, `95d6c292`, `16f39970`, `5c00a903`, `45bd3d22`); the pipe-race fix
+      and this file's follow-up note are still uncommitted.
 
 ## Sequencing and effort
 

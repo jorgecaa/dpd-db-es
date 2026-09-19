@@ -83,9 +83,16 @@ for attempt in 1 2 3 4 5; do
 done
 [[ -n "$API_JSON" ]] || die "could not reach the GitHub API after 5 attempts"
 
-LATEST="$(printf '%s' "$API_JSON" \
-          | grep -m1 '"tag_name"' \
-          | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
+# Parsed in pure bash on purpose: `printf | grep -m1` is a race — grep exits on the
+# first match, and a 29 KB `printf` into a pipe whose reader has gone gets EPIPE,
+# which `set -o pipefail` turns into a script failure. That is exactly how this
+# script died at 21:15 on 2026-09-18 (broken pipe, exit 1) while every earlier test
+# run had won the race.
+if [[ "$API_JSON" =~ \"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
+    LATEST="${BASH_REMATCH[1]}"
+else
+    LATEST=""
+fi
 [[ -n "$LATEST" ]] || die "could not read the latest version from the API response"
 log "published: $LATEST"
 
@@ -126,12 +133,14 @@ curl -fL --retry 3 --retry-delay 5 -o "$WORKDIR/$ASSET_NAME" "$ASSET_URL" \
 log "unpacking ..."
 tar -xJf "$WORKDIR/$ASSET_NAME" -C "$WORKDIR" || die "unpacking failed"
 
-NEW_DB="$(find "$WORKDIR" -name 'dpd.db' -type f | head -1)"
+# `-print -quit` instead of `| head -1`: same reason as the tag parsing above.
+NEW_DB="$(find "$WORKDIR" -name 'dpd.db' -type f -print -quit)"
 [[ -n "$NEW_DB" ]] || die "no dpd.db inside the archive"
 
 # ── 4. Validate what was downloaded ──────────────────────────────────────────
 log "validating SQLite integrity ..."
-ok="$(sqlite3 "$NEW_DB" "PRAGMA integrity_check;" 2>/dev/null | head -1)"
+ok="$(sqlite3 "$NEW_DB" "PRAGMA integrity_check;" 2>/dev/null)"
+ok="${ok%%$'\n'*}"  # `| head -1` would be the same broken-pipe race
 [[ "$ok" == "ok" ]] || die "integrity_check failed: '$ok'"
 
 NEW_VER="$(read_version "$NEW_DB")"
