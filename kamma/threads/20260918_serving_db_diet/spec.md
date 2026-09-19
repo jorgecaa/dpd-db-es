@@ -80,6 +80,12 @@ The same run doubles as a negative control for the oracle: it is sensitive enoug
 catch a db that serves *nothing*, and it was the reason the trim was caught in
 minutes rather than in production.
 
+**The block is cleared (2026-09-19).** After Phase 1 — `defer`ring the eight
+`dpd_headwords` and five `lookup` columns nothing reads, at every request-path entity
+load — the same trimmed copy (1470.1 MiB) serves the golden oracle **130/130
+byte-identical**. The 710 MiB is claimable; the remaining work is turning that into a
+build target (plan Phase 2).
+
 ## What the diet would actually require
 
 | Option | What it costs | Verdict |
@@ -106,12 +112,17 @@ in-process), splitting the two call sites this thread cares about from the rest:
 
 Three conclusions that correct the sketch this thread started from:
 
-1. **The `_combos` member load is not the problem it looked like.** 283 KiB cold,
-   **zero warm**, 4.9 ms. `load_only(lemma_1, meaning_1, meaning_2, meaning_lit, pos,
-   construction)` is proven behaviour-preserving — **80 of 80 family tables produce an
-   identical `_combos` dict**, and the two extra columns (`pos`, `construction`) are
-   what the overlay's fingerprint needs — but it would save ~2 % of a page's reads.
-   Its value is *unblocking the diet*, not speed.
+1. **The `_combos` member load: fixed, and smaller than the first measurement
+   suggested.** 283 KiB cold, **zero warm**, 4.9 ms. The fix needs **twelve** columns,
+   not six — `load_only` silently ignores hybrid properties (`meaning_1`/`_meaning_2`/
+   `meaning_lit`), and the overlay's fingerprint reaches `summarize_construction`, which
+   also reads `origin`, `root_key`, `root_base`, `root_sign`, `family_root` and
+   `family_word`. Measured with the correct set: **1 statement instead of 167**, per
+   165-member table **4,832 → 1,364 KiB (3.5×) and 15.0 → 8.8 ms**, per cold page
+   **283 → 149 KiB**, `_combos` identical over 80/80 family tables. An earlier reading
+   of "388 KiB, 12.6×" was an artifact of the incomplete set: those bytes *were* the
+   lazy loads. It is still only ~1 % of a page's reads; its value was unblocking the
+   diet, and that is now done.
 2. **`lookup_rows` has no measurable cost**: 2 rows, 64 KiB with the entity load
    against 60 KiB with `load_only` — one page either way, and `load_only` measured
    *slower* (1.16 ms vs 0.97 ms). It is a diet blocker only, never a hot spot.

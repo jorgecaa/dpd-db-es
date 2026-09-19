@@ -56,16 +56,16 @@ need task 1.1 first (they feed templates); the rest are already known.
 
 | # | Site | Loads | Columns needed | Effort |
 |---|---|---|---|---|
-| 1 | `tools/spanish.py:489` `translate_family_html` | `DpdHeadword` | `lemma_1`, `meaning_1`, `meaning_2`, `meaning_lit`, `pos`, `construction` — **parity proven, 80/80** | trivial |
-| 2 | `exporter/webapp/toolkit.py:117` `lookup_rows` probe | `Lookup` | `lookup_key`, `headwords`, `roots`, `deconstructor`, `variant`, `see`, `spelling`, `grammar`, `help`, `abbrev`, `abbrev_other`, `epd` | trivial |
-| 3 | `exporter/webapp/toolkit.py:140` `lookup_rows` fallback | `Lookup` | same 12 | trivial |
-| 4 | `toolkit.py:188` ficha by ids | `DpdHeadword` | *inventory* — `HeadwordData` + `dpd_headword.html` | hard |
-| 5 | `toolkit.py:325` ficha by id (numeric query) | `DpdHeadword` | same as 4 | hard |
-| 6 | `toolkit.py:346` ficha by `lemma_1` (`kata 5`) | `DpdHeadword` | same as 4 | hard |
-| 7 | `toolkit.py:212` root panel | `DpdRoot` | *inventory* — the roots template | medium |
-| 8 | `toolkit.py:217` root families | `FamilyRoot` | `html` (+ `data`? unread by the webapp) | medium |
-| 9 | `tools/exporter_functions.py:24,35,53,63,79` family helpers | `FamilyCompound`, `FamilyIdiom`, `FamilySet` | `html` + the key column; `data` is read only by `scripts/build/families_to_json.py` | easy |
-| 10 | `tools/cache_load.py:41,54`, `main.py:74` | `DbInfo` | `key`, `value` | skip — 23 rows |
+| 1 | `tools/spanish.py` `translate_family_html` | `DpdHeadword` | **12 columns** (measured, not guessed): `lemma_1`, `_meaning_1`, `_meaning_2`, `_meaning_lit`, `pos`, `construction`, `origin`, `root_key`, `root_base`, `root_sign`, `family_root`, `family_word` — **done, 80/80 parity** | done |
+| 2 | `exporter/webapp/toolkit.py` `lookup_rows` probe | `Lookup` | the five unread are `defer`red instead: `sinhala`, `thai`, `devanagari`, `rpd`, `other` | done |
+| 3 | `toolkit.py` `lookup_rows` fallback | `Lookup` | same | done |
+| 4 | `toolkit.py` ficha by ids | `DpdHeadword` | the eight droppable are `defer`red; everything else loads | done |
+| 5 | `toolkit.py` ficha by id (numeric) | `DpdHeadword` | same | done |
+| 6 | `toolkit.py` ficha by `lemma_1` | `DpdHeadword` | same | done |
+| 7 | `toolkit.py` root panel | `DpdRoot` | not needed: `dpd_roots` columns are not in the drop list | skipped |
+| 8 | `toolkit.py` root families | `FamilyRoot` | not needed, same reason | skipped |
+| 9 | `tools/exporter_functions.py` family helpers | `FamilyCompound`, `FamilyIdiom`, `FamilySet` | not needed, same reason (`data` stays: `families_to_json.py` reads it) | skipped |
+| 10 | `tools/cache_load.py`, `main.py` | `DbInfo` | not needed (23 rows) | skipped |
 
 Not in the request path: `tools/spanish.py:549` (`preload_combos`) and `:570`
 (`translate_family_rows`) belong to the offline family-JSON build, and
@@ -73,27 +73,50 @@ Not in the request path: `tools/spanish.py:549` (`preload_combos`) and `:570`
 
 ## Phase 1 — make every request-path load column-explicit (enabling work)
 
-- [ ] **1.1** Inventory the attributes of the **displayed headword** (sites 4–6): walk
-      `exporter/webapp/templates/dpd_headword.html` and every template it includes,
-      plus `HeadwordData` and `make_grammar_line`, and list attribute → template.
-      → verify: a table in this file with no unknown rows; each attribute traceable to
-      a template line; `pos`/`construction` included if the overlay needs them.
-- [ ] **1.2** Site 1: `load_only` the six columns. → verify: 80/80 `_combos` parity
-      (already measured), oracle identical, per-page member-load reads recorded
-      (baseline 283 KiB cold / 0 warm).
-- [ ] **1.3** Sites 2–3: `load_only` the twelve columns. → verify: oracle identical and
-      the statement log shows none of `sinhala`/`thai`/`devanagari`/`rpd`/`other`.
-- [ ] **1.4** Site 9: family helpers. → verify: oracle identical; `data` no longer in
-      the SELECT; `scripts/build/families_to_json.py` untouched and still runs.
-- [ ] **1.5** Sites 7–8: `DpdRoot` and `FamilyRoot`. → verify: oracle identical.
-- [ ] **1.6** Sites 4–6: the display loads. → verify: oracle identical **and** a
-      negative test that accessing an unloaded attribute fails loudly rather than
-      silently rendering nothing (the reason for a `raiseload`-style check).
-- [ ] **1.7** Re-run Phase 0.3/0.4 on top of 1.1–1.6: rebuild the trimmed copy, serve
-      it, run the oracle. → verify: 130/130 identical **and** the saving still
-      ≥ ~700 MiB. If it fails, the traceback names the missed site — fix and repeat.
-- [ ] **1.8** Gate: `ruff`, `ruff format`, `pyright`, `pytest` (plus `-m slow`),
-      `just typecheck`, oracle on the canary **and** on production after deploy.
+- [x] **1.1** Inventory the attributes of the **displayed headword** (sites 4–6).
+      **DONE 2026-09-19, in the form that actually matters.** The template reads ~70
+      attributes and each is a property chain, so instead of hand-listing a minimal set
+      the display loads `defer` the eight columns a serving build drops and load
+      everything else: the list that has to be right is the *dropped* one, and it is
+      eight names long. `tests/exporter/webapp/test_serving_columns.py` renders one page
+      per display path (lookup hit, numeric id, numbered lemma) against the live db and
+      fails if any dropped column reappears in a SELECT **or** if a deferred attribute is
+      read one row at a time. Both checks pass on all three paths.
+- [x] **1.2** Site 1: `load_only` the family-member load. **DONE 2026-09-19 — with
+      twelve columns, not six.** Two traps, both caught by measuring:
+      `meaning_1`/`meaning_2`/`meaning_lit` are **hybrid properties** and `load_only`
+      ignores those silently (the real column stays deferred → one lazy SELECT per
+      attribute per row), and the overlay's fingerprint reaches
+      `construction_summary` → `summarize_construction`, which also reads `origin`,
+      `root_key`, `root_base`, `root_sign`, `family_root` and `family_word`. With the
+      correct set: **1 statement instead of 167**, per 165-member table **4,832 →
+      1,364 KiB (3.5×) and 15.0 → 8.8 ms**, per cold page **283 → 149 KiB**, `_combos`
+      identical over 80/80 family tables.
+      *Superseded claim:* an earlier "388 KiB, 12.6×" reading was an artifact of the
+      incomplete set — those bytes were the lazy loads themselves.
+- [x] **1.3** Sites 2–3: `defer` the five unread `Lookup` columns. **DONE 2026-09-19**
+      (deferred rather than `load_only`: the row is 0.3 KiB, so there is nothing to win
+      on bytes — the point is that a trimmed db can drop them). Locked by
+      `test_a_hit_goes_through_the_index`.
+- [x] **1.4** Site 9: family helpers. **NOT NEEDED for the diet** — `family_*` columns
+      are not in the drop list, so nothing blocks them. Recorded rather than done.
+- [x] **1.5** Sites 7–8: `DpdRoot` and `FamilyRoot`. **NOT NEEDED**, same reason; their
+      columns are not droppable either.
+- [x] **1.6** Sites 4–6: the display loads. **DONE 2026-09-19** via `defer` of the eight
+      columns (`_DEFER_HEADWORD` in `toolkit.py`). Verified on all three paths: no
+      deferred column in any SELECT, no lazy loads. The `raiseload`-style check the task
+      asked for was replaced by the statement log, which catches the same regression
+      without risking a hard failure on a column the template legitimately reads.
+- [x] **1.7** Rebuild the trimmed copy and serve it. **DONE 2026-09-19 — it passes.**
+      `build_trimmed_copy.py` → 2180.7 → **1470.1 MiB (710.6 MiB, 32.6 %) in 58 s**;
+      served from `/tmp/dpdtrim` on port 8083 the golden oracle is **130/130
+      byte-identical** (`aa63ecff…`), where before Phase 1 the same db returned 125
+      `Internal Server Error`s. The 710 MiB is now claimable.
+- [x] **1.8** Gate: `ruff check` clean · `ruff format` applied · `pyright` **0 errors**
+      on the five touched files · `pytest tests/exporter/webapp
+      tests/tools/test_spanish_combos.py`: **91 passed**, 7 deselected · `-m slow`: **7
+      passed** · `just typecheck`: same 90 pre-existing errors, none in these files ·
+      oracle identical on the canary **and** on production after deploy (startup 4 s).
 
 ## Phase 2 — a serving-db build target (the payoff of Phase 1)
 
