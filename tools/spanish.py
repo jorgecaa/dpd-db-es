@@ -103,6 +103,14 @@ _combos: dict[str, str] = {}
 # (bounded only by the 89,280 headwords). Measured in
 # kamma/threads/20260918_webapp_memory/plan.md (task 2.3).
 _COMBOS_MAX = 20_000
+
+# How many lemmas go into one `IN (...)`. SQLite's parameter ceiling is a build-time
+# constant: 999 before 3.32, 32766 in the builds this project runs (measured
+# 2026-09-18: sqlite 3.51.2, MAX_VARIABLE_NUMBER=32766, 40000 fails). The biggest
+# family table renders 882 distinct lemmas — 2.7 % of today's ceiling, but 88 % of the
+# old one — so the batches stay well below either. This is a portability guard, not a
+# fix for a live failure.
+_IN_CHUNK = 500
 _local = threading.local()
 
 
@@ -452,6 +460,13 @@ def unsuperscript(lemma: str) -> str:
     return lemma.translate(SUPERSCRIPTS)
 
 
+def _batches(lemmas: set[str], size: int) -> Iterator[list[str]]:
+    """Split lemmas into chunks, one SQL `IN (...)` each."""
+    ordered = sorted(lemmas)
+    for start in range(0, len(ordered), size):
+        yield ordered[start : start + size]
+
+
 def translate_family_html(html: str, db_session) -> str:
     """Replace the meaning cell of each family row with its Spanish.
 
@@ -469,13 +484,13 @@ def translate_family_html(html: str, db_session) -> str:
         return html
 
     missing = lemmas - _combos.keys()
-    if missing:
+    for batch in _batches(missing, _IN_CHUNK):
         rows = (
-            db_session.query(DpdHeadword).filter(DpdHeadword.lemma_1.in_(missing)).all()
+            db_session.query(DpdHeadword).filter(DpdHeadword.lemma_1.in_(batch)).all()
         )
         _combos.update({row.lemma_1: row.meaning_combo for row in rows})
-        # remember the misses too, so they are not queried again
-        _combos.update({lemma: "" for lemma in missing - {row.lemma_1 for row in rows}})
+    # remember the misses too, so they are not queried again
+    _combos.update({lemma: "" for lemma in missing if lemma not in _combos})
 
     def replace(match: "re.Match[str]") -> str:
         combo = _combos.get(unsuperscript(match.group("lemma")))

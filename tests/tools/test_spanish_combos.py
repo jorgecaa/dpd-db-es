@@ -1,10 +1,16 @@
-"""The `_combos` memo in `tools/spanish.py` must stay bounded.
+"""The `_combos` memo in `tools/spanish.py`, its bound, and its batched lookup.
 
 It memoises `lemma_1 -> overlaid meaning_combo` while translating the family tables
 stored in `dpd.db`. It is a pure cache, so evicting can only cost a re-query; before
 task 2.3 it grew with every lemma ever seen, bounded only by the 89,280 headwords.
 
-See `kamma/threads/20260918_webapp_memory/plan.md`, task 2.3.
+The lookup is batched below SQLite's parameter ceiling. Measured 2026-09-18: the build
+this project runs allows 32,766 variables (40000 fails) and the biggest family table
+renders 882 lemmas, so batching is a portability guard for older SQLite builds — whose
+ceiling is 999 — not a fix for a live failure.
+
+See `kamma/threads/20260918_webapp_memory/plan.md` (task 2.3) and
+`kamma/threads/20260918_serving_db_diet/spec.md` (the addendum).
 """
 
 from __future__ import annotations
@@ -12,7 +18,8 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from db.models import Base, DpdHeadword
@@ -92,3 +99,57 @@ def test_capping_does_not_change_the_output(monkeypatch: pytest.MonkeyPatch) -> 
     capped = spanish.translate_family_html(html, session)
 
     assert capped == uncapped
+
+
+# --- the batched `IN (...)` --------------------------------------------------
+
+
+def _statements(session: Session) -> list[tuple[str, tuple[str, ...]]]:
+    """Every statement from now on, with its parameters, whitespace collapsed."""
+    engine: Engine = session.get_bind()  # type: ignore[assignment]
+    collected: list[tuple[str, tuple[str, ...]]] = []
+
+    def _record(conn, cursor, statement, parameters, context, executemany) -> None:
+        collected.append((" ".join(statement.split()), tuple(parameters or ())))
+
+    event.listen(engine, "before_cursor_execute", _record)
+    return collected
+
+
+def test_the_family_lookup_is_batched(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One `IN (...)` per chunk, none bigger than the chunk size."""
+    monkeypatch.setattr(spanish, "_IN_CHUNK", 3)
+    lemmas = [f"lemma{i}" for i in range(10)]
+    session = _session(lemmas)
+    statements = _statements(session)
+
+    spanish.translate_family_html(_family_html(lemmas), session)
+
+    selects = [params for sql, params in statements if "FROM dpd_headwords" in sql]
+    assert len(selects) == 4  # ceil(10 / 3)
+    assert max(len(params) for params in selects) <= 3
+    assert len(spanish._combos) == 10
+
+
+def test_batching_does_not_change_the_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    lemmas = [f"lemma{i}" for i in range(10)]
+    session = _session(lemmas)
+    html = _family_html(lemmas)
+
+    monkeypatch.setattr(spanish, "_IN_CHUNK", 3)
+    chunked = spanish.translate_family_html(html, session)
+    spanish._combos.clear()
+
+    monkeypatch.setattr(spanish, "_IN_CHUNK", 100)
+    whole = spanish.translate_family_html(html, session)
+
+    assert chunked == whole
+
+
+def test_a_family_larger_than_the_old_parameter_limit_resolves() -> None:
+    """1,200 lemmas in one table: over the 999 of old SQLite builds, under 32,766."""
+    lemmas = [f"lemma{i}" for i in range(1200)]
+    session = _session(lemmas)
+    produced = spanish.translate_family_html(_family_html(lemmas), session)
+    assert "english meaning" not in produced
+    assert len(spanish._combos) == 1200
