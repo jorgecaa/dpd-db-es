@@ -6,7 +6,7 @@ from pathlib import Path
 
 from sqlalchemy import func, literal, or_, select, text
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from db.db_helpers import get_db_session
 from db.models import DpdHeadword, DpdRoot, FamilyRoot, Lookup
@@ -35,6 +35,28 @@ from tools.variants_manager import VariantManager
 
 
 _variant_manager: VariantManager | None = None
+
+# Columns this webapp never reads. They are `defer`red rather than merely unread, so a
+# serving-only build of the database can drop them: an ORM entity load selects every
+# column the model declares, and a trimmed db without them fails with "no such column"
+# (measured 2026-09-18: dropping them broke 125 of 130 golden-oracle responses).
+# `kamma/threads/20260918_serving_db_diet/` has the size figures and the design.
+_UNREAD_HEADWORD_COLUMNS = (
+    "freq_data",
+    "inflections_sinhala",
+    "inflections_thai",
+    "inflections_devanagari",
+    "inflections",
+    "inflections_api_ca_eva_iti",
+    "created_at",
+    "updated_at",
+)
+_UNREAD_LOOKUP_COLUMNS = ("sinhala", "thai", "devanagari", "rpd", "other")
+
+_DEFER_HEADWORD = tuple(
+    defer(getattr(DpdHeadword, name)) for name in _UNREAD_HEADWORD_COLUMNS
+)
+_DEFER_LOOKUP = tuple(defer(getattr(Lookup, name)) for name in _UNREAD_LOOKUP_COLUMNS)
 
 
 def get_variant_manager() -> VariantManager:
@@ -115,6 +137,7 @@ def lookup_rows(
     """
     rows = (
         db_session.query(Lookup)
+        .options(*_DEFER_LOOKUP)
         .filter(Lookup.lookup_key.in_(probe_keys(q, variants)))
         .order_by(text("lookup.rowid"))
         .all()
@@ -138,6 +161,7 @@ def lookup_rows(
 
     return (
         db_session.query(Lookup)
+        .options(*_DEFER_LOOKUP)
         .filter(Lookup.lookup_key.in_(matched_keys))
         .order_by(text("lookup.rowid"))
         .all()
@@ -186,6 +210,7 @@ def make_dpd_html(
                                 headwords = lookup_result.headwords_unpack
                                 headword_results = (
                                     db_session.query(DpdHeadword)
+                                    .options(*_DEFER_HEADWORD)
                                     .filter(DpdHeadword.id.in_(headwords))
                                     .all()
                                 )
@@ -323,6 +348,7 @@ def make_dpd_html(
                         search_term = int(q)
                         headword_result = (
                             db_session.query(DpdHeadword)
+                            .options(*_DEFER_HEADWORD)
                             .filter(DpdHeadword.id == search_term)
                             .first()
                         )
@@ -344,6 +370,7 @@ def make_dpd_html(
                     elif re.search(r"\s\d", q):  # eg "kata 5"
                         headword_result = (
                             db_session.query(DpdHeadword)
+                            .options(*_DEFER_HEADWORD)
                             .filter(DpdHeadword.lemma_1 == q)
                             .first()
                         )

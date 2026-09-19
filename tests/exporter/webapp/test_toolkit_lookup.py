@@ -140,6 +140,19 @@ def test_a_hit_goes_through_the_index() -> None:
     assert any("WHERE lookup.lookup_key IN (" in statement for statement in statements)
     assert not any("LIKE lower" in statement for statement in statements)
 
+    # The columns no code reads are deferred, so a serving-db build can drop them
+    # (`kamma/threads/20260918_serving_db_diet/`).
+    unread = ("sinhala", "thai", "devanagari", "rpd", "other")
+    leaked = sorted(
+        {
+            column
+            for statement in statements
+            for column in unread
+            if f"lookup.{column} AS" in statement
+        }
+    )
+    assert not leaked, leaked
+
 
 def test_a_miss_falls_back_to_the_covering_index_scan() -> None:
     """The safety net reads only the key column, so SQLite can cover it."""
