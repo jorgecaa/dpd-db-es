@@ -71,6 +71,15 @@ SANSKRIT_COLUMN = "meaning_es"
 NOTES_TABLE = "notes_es"
 NOTES_COLUMN = "notes_es"
 
+# Los resúmenes de la ficha de sutta (`sutta_info.dv_summary`) siguen el mismo
+# camino que las notas, y por los mismos motivos: 2.134 filas comparten sólo
+# 1.670 textos distintos —el vagga repite el resumen de su primer sutta—, así
+# que la clave natural es el resumen inglés. Y como con las notas, ese inglés es
+# a la vez clave y huella: si el catálogo DV reescribe un resumen, la traducción
+# deja de casar y vuelve el original.
+SUTTA_SUMMARY_TABLE = "sutta_summaries_es"
+SUTTA_SUMMARY_COLUMN = "summary_es"
+
 # Webapp interface strings, keyed by the exact English as it appears in the
 # templates. Substitution happens when Jinja loads a template, so no template
 # is edited and upstream can keep churning them freely; a string that changes
@@ -83,11 +92,17 @@ _translations: dict[str, dict[str, str]] | None = None
 _roots: dict[str, dict[str, str]] | None = None
 _sanskrit: dict[str, dict[str, str]] | None = None
 _notes: dict[str, dict[str, str]] | None = None
+_sutta_summaries: dict[str, dict[str, str]] | None = None
 _ui: dict[str, dict[str, str]] | None = None
 # lemma_1 -> its overlaid meaning_combo, memoised across family tables and
 # requests: the same lemmas recur in family after family, and re-querying
 # them tripled page latency on words with many compound families
 _combos: dict[str, str] = {}
+# Cap on that memo. It is a pure cache, so evicting costs a re-query and can
+# never change an answer; without a cap it grew with every lemma ever seen
+# (bounded only by the 89,280 headwords). Measured in
+# kamma/threads/20260918_webapp_memory/plan.md (task 2.3).
+_COMBOS_MAX = 20_000
 _local = threading.local()
 
 
@@ -173,6 +188,16 @@ def load_notes() -> dict[str, dict[str, str]]:
     return _notes
 
 
+def load_sutta_summaries() -> dict[str, dict[str, str]]:
+    """Load the sutta summary translations into memory, once."""
+    global _sutta_summaries
+    if _sutta_summaries is None:
+        _sutta_summaries = _read_table(
+            SUTTA_SUMMARY_TABLE, "summary_en", (SUTTA_SUMMARY_COLUMN,)
+        )
+    return _sutta_summaries
+
+
 def load_ui() -> dict[str, dict[str, str]]:
     """Load the interface strings into memory, once."""
     global _ui
@@ -183,14 +208,33 @@ def load_ui() -> dict[str, dict[str, str]]:
 
 def reload() -> None:
     """Drop the cached config switch and translations."""
-    global _enabled, _translations, _roots, _sanskrit, _notes, _ui
+    global _enabled, _translations, _roots, _sanskrit, _notes, _sutta_summaries, _ui
     _enabled = None
     _translations = None
     _roots = None
     _sanskrit = None
     _notes = None
+    _sutta_summaries = None
     _ui = None
     _combos.clear()
+
+
+def cache_sizes() -> dict[str, int]:
+    """Entries held by the overlay's caches, for the webapp's dashboard and metrics.
+
+    `_combos` is the only one that is not a fixed-size load; it is capped at
+    `_COMBOS_MAX`, which is why the webapp can assert a memory budget at all.
+    """
+    return {
+        "sidecar_meanings": len(_translations or {}),
+        "sidecar_roots": len(_roots or {}),
+        "sidecar_sanskrit": len(_sanskrit or {}),
+        "sidecar_notes": len(_notes or {}),
+        "sidecar_sutta_summaries": len(_sutta_summaries or {}),
+        "sidecar_ui": len(_ui or {}),
+        "combos": len(_combos),
+        "inflection_html": int(_translate_inflection_html.cache_info().currsize),
+    }
 
 
 SEPARATOR = re.compile(r"[+\s]+")
@@ -376,6 +420,20 @@ def overlay_notes(english: str) -> str:
     return stored[NOTES_COLUMN] or english
 
 
+def overlay_sutta_summary(english: str) -> str:
+    """Spanish for a sutta summary, falling back to English.
+
+    Keyed by the English summary itself, so one rewritten upstream simply misses
+    and keeps its English — the same guarantee `overlay_notes` gets.
+    """
+    if not is_active() or not english:
+        return english
+    stored = load_sutta_summaries().get(english)
+    if stored is None:
+        return english
+    return stored[SUTTA_SUMMARY_COLUMN] or english
+
+
 # Family tables are stored in `dpd.db` as HTML rendered at build time, so their
 # meanings never pass through the ORM. Every family type shares one row shape:
 #     <tr><th>LEMMA</th><td><b>POS</b></td><td>MEANING</td>...</tr>
@@ -425,7 +483,16 @@ def translate_family_html(html: str, db_session) -> str:
             return match.group(0)
         return f"{match.group(1)}{combo}{match.group(4)}"
 
-    return FAMILY_ROW.sub(replace, html)
+    translated = FAMILY_ROW.sub(replace, html)
+
+    # Bound the memo *after* this table has been translated: the substitution reads
+    # `_combos`, so trimming before it would leave rows untranslated. Oldest
+    # insertions go first; the dropped lemmas are simply queried again next time.
+    if len(_combos) > _COMBOS_MAX:
+        for lemma in list(_combos)[: len(_combos) - _COMBOS_MAX]:
+            del _combos[lemma]
+
+    return translated
 
 
 # El DPD marca con «(comm)» lo que viene del comentario, y la traducción
