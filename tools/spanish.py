@@ -478,6 +478,7 @@ def translate_family_html(html: str, db_session) -> str:
         return html
 
     from db.models import DpdHeadword
+    from sqlalchemy.orm import load_only
 
     lemmas = {unsuperscript(m.group("lemma")) for m in FAMILY_ROW.finditer(html)}
     if not lemmas or db_session is None:
@@ -485,8 +486,40 @@ def translate_family_html(html: str, db_session) -> str:
 
     missing = lemmas - _combos.keys()
     for batch in _batches(missing, _IN_CHUNK):
+        # Only the meaning cell is rewritten, plus what the overlay's fingerprint needs,
+        # so the load is restricted to exactly those columns. Three traps, each caught by
+        # measuring rather than reasoning:
+        #   * the names must be the *mapped* attributes — `meaning_1`/`meaning_2`/
+        #     `meaning_lit` are hybrid properties and `load_only` ignores those silently,
+        #     deferring the real column and costing one lazy SELECT per attribute/row;
+        #   * the fingerprint goes through `construction_summary` ->
+        #     `summarize_construction` (`tools/meaning_construction.py`), which reads
+        #     `origin`, `root_key`, `root_base`, `root_sign`, `family_root` and
+        #     `family_word` on top of `pos` and `construction` — miss one and every row
+        #     pays one more SELECT (measured: `root_base` alone cost 166 extra queries
+        #     and 68 ms against 14 ms for the whole row);
+        #   * `pos`/`construction` are only needed while the overlay is on, but they are
+        #     always loaded: the query does not know, and the columns are cheap.
         rows = (
-            db_session.query(DpdHeadword).filter(DpdHeadword.lemma_1.in_(batch)).all()
+            db_session.query(DpdHeadword)
+            .options(
+                load_only(
+                    DpdHeadword.lemma_1,
+                    DpdHeadword._meaning_1,
+                    DpdHeadword._meaning_2,
+                    DpdHeadword._meaning_lit,
+                    DpdHeadword.pos,
+                    DpdHeadword.construction,
+                    DpdHeadword.origin,
+                    DpdHeadword.root_key,
+                    DpdHeadword.root_base,
+                    DpdHeadword.root_sign,
+                    DpdHeadword.family_root,
+                    DpdHeadword.family_word,
+                )
+            )
+            .filter(DpdHeadword.lemma_1.in_(batch))
+            .all()
         )
         _combos.update({row.lemma_1: row.meaning_combo for row in rows})
     # remember the misses too, so they are not queried again

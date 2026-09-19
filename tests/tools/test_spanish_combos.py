@@ -130,6 +130,15 @@ def test_the_family_lookup_is_batched(monkeypatch: pytest.MonkeyPatch) -> None:
     assert max(len(params) for params in selects) <= 3
     assert len(spanish._combos) == 10
 
+    # No per-attribute lazy loads: naming a hybrid property in `load_only` is silently
+    # ignored, which defers the real column and costs one SELECT per attribute per row.
+    lazy = [
+        sql
+        for sql, _ in statements
+        if sql.count("dpd_headwords.") == 1 and "WHERE dpd_headwords.id = " in sql
+    ]
+    assert not lazy, lazy
+
 
 def test_batching_does_not_change_the_output(monkeypatch: pytest.MonkeyPatch) -> None:
     lemmas = [f"lemma{i}" for i in range(10)]
