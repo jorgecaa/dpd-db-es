@@ -20,6 +20,10 @@ dependencies = [
     "requests>=2.32.3",
     "typst>=0.14.9",
     "filelock>=3.29.1",
+    # Gauge for the webapp's serving-memory metrics. It arrives with
+    # prometheus-fastapi-instrumentator, which imports Counter/Histogram/Summary
+    # but does not re-export Gauge; no extra provides it separately.
+    "prometheus-client>=0.25.0",
 ]
 
 [dependency-groups]

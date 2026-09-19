@@ -19,7 +19,11 @@ from exporter.webapp.preloads import (
     make_headwords_clean_set,
     make_roots_count_dict,
 )
-from exporter.webapp.toolkit import make_dpd_html
+from exporter.webapp.memory import (
+    publish_cache_gauges,
+    publish_memory_gauges,
+)
+from exporter.webapp.toolkit import lookup_key_variants, make_dpd_html
 from tools.css_manager import CSSManager
 from tools.paths import ProjectPaths
 from tools.pali_text_files import cst_texts
@@ -70,6 +74,10 @@ with get_db() as db_session:
         db_session.query(DbInfo).filter(DbInfo.key == "dpd_release_version").first()
     )
     dpd_release_version = db_info.value if db_info else "unknown"
+
+# Warm the search probe's ambiguity set here, not on the first request: it costs
+# ~0.8 s once and makes every later search an index lookup instead of a 419 MB scan.
+lookup_key_variants(pth.dpd_db_path)
 
 # Set up templates
 templates = Jinja2Templates(directory=str(pth.webapp_templates_dir))
@@ -219,8 +227,10 @@ def db_search_bd(
 
     from tools.bold_definitions_search import BoldDefinitionsSearchManager
 
-    bd_searcher = BoldDefinitionsSearchManager()
-    results = bd_searcher.search(q1, q2, option)
+    # Context manager: one session per request, closed when the request ends, so
+    # the connection is returned instead of waiting for garbage collection.
+    with BoldDefinitionsSearchManager() as bd_searcher:
+        results = bd_searcher.search(q1, q2, option)
 
     if results:
         message = f"<b>{len(results)}</b> results found"
@@ -455,30 +465,30 @@ async def track_performance(request: Request, call_next):
 @app.get("/status", response_class=HTMLResponse)
 def status_page(request: Request):
     """Human-readable status dashboard."""
-    import psutil
-    import platform
     import os
+    import platform
+    import psutil
     from datetime import datetime
-    from tools.cache_load import load_audio_dict
+
+    from exporter.webapp.memory import (
+        DOCUMENTED_IDLE_BUDGET_MIB,
+        cache_facts,
+        read_memory_facts,
+    )
 
     process = psutil.Process()
-    mem_info = process.memory_info()
     sys_mem = psutil.virtual_memory()
+    facts = read_memory_facts()
+    caches = cache_facts({"history": len(history_list)})
 
-    # Memory Calculation (App)
-    app_used = mem_info.rss
-    app_total = 4096 * 1024 * 1024  # 4GB Limit
-    app_percent = (app_used / app_total) * 100
-
-    # Memory Calculation (System)
-    sys_used = sys_mem.used
-    sys_total = sys_mem.total
-    sys_percent = sys_mem.percent
-
-    health_color = "green"
-    if app_percent > 70 or metrics["ema_time"] > 300:
+    # Memory: the budget is the cgroup limit when there is one, else the documented
+    # steady-state budget (see exporter/webapp/memory.py). Health is budget-relative
+    # — green inside, orange to 1.5x, red beyond — and the response-time thresholds
+    # are unchanged from before this rework.
+    health_color = facts.health
+    if metrics["ema_time"] > 300 and health_color == "green":
         health_color = "orange"
-    if app_percent > 90 or metrics["ema_time"] > 600:
+    if metrics["ema_time"] > 600:
         health_color = "red"
 
     stats = {
@@ -490,14 +500,29 @@ def status_page(request: Request):
         "uptime": str(
             datetime.now() - datetime.fromtimestamp(process.create_time())
         ).split(".")[0],
-        # App Mem
-        "app_mem_used": f"{app_used / 1024 / 1024:.2f} MB",
-        "app_mem_total": f"{app_total / 1024 / 1024 / 1024:.2f} GB",
-        "app_mem_percent": f"{app_percent:.1f}%",
+        # App Mem — anon is the number the budget tracks; file is shared page cache
+        "app_mem_used": f"{facts.anon_mib or 0:.2f} MiB",
+        "app_mem_total": f"{facts.budget_mib:.2f} MiB",
+        "app_mem_percent": f"{facts.percent_of_budget:.1f}%",
+        "app_mem_rss": f"{facts.rss_mib or 0:.2f} MiB",
+        "app_mem_file": f"{facts.file_mib or 0:.2f} MiB",
+        "app_mem_cgroup_current": (
+            f"{facts.cgroup_current_mib:.2f} MiB"
+            if facts.cgroup_current_mib is not None
+            else "n/a"
+        ),
+        "app_mem_cgroup_peak": (
+            f"{facts.cgroup_peak_mib:.2f} MiB"
+            if facts.cgroup_peak_mib is not None
+            else "n/a"
+        ),
+        "app_mem_budget_source": facts.budget_source,
+        "app_mem_idle_budget": f"{DOCUMENTED_IDLE_BUDGET_MIB:.0f} MiB",
+        "app_mem_processes": facts.processes if facts.processes is not None else "n/a",
         # Sys Mem
-        "sys_mem_used": f"{sys_used / 1024 / 1024 / 1024:.2f} GB",
-        "sys_mem_total": f"{sys_total / 1024 / 1024 / 1024:.2f} GB",
-        "sys_mem_percent": f"{sys_percent:.1f}%",
+        "sys_mem_used": f"{sys_mem.used / 1024 / 1024 / 1024:.2f} GB",
+        "sys_mem_total": f"{sys_mem.total / 1024 / 1024 / 1024:.2f} GB",
+        "sys_mem_percent": f"{sys_mem.percent:.1f}%",
         "health_color": health_color,
         "cpu_percent": f"{process.cpu_percent(interval=0.1)}%",
         "threads": process.num_threads(),
@@ -507,7 +532,10 @@ def status_page(request: Request):
         "ema_response_time": f"{metrics['ema_time']:.2f} ms",
         "official": metrics["official"],
         "other": metrics["other"],
-        "audio_cache_loaded": load_audio_dict.cache_info().currsize > 0,
+        "caches": [
+            {"name": name, "size": f"{size:,}"} for name, size in sorted(caches.items())
+        ],
+        "audio_cache_loaded": caches.get("audio_dict", 0) > 0,
     }
 
     return templates.TemplateResponse(
@@ -519,8 +547,16 @@ def status_page(request: Request):
     )
 
 
-# Proactively monitor memory and performance
-Instrumentator().instrument(app).expose(app)
+# Proactively monitor memory and performance. The two publishers refresh the
+# serving-memory and per-cache gauges after every request, so a scrape always sees
+# current numbers without adding work to the request path's own logic. They must be
+# added to the same instrumentator that instruments the app.
+instrumentator = Instrumentator()
+instrumentator.add(
+    lambda info: publish_memory_gauges(),
+    lambda info: publish_cache_gauges({"history": len(history_list)}),
+)
+instrumentator.instrument(app).expose(app)
 
 
 if __name__ == "__main__":

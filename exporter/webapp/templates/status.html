@@ -93,9 +93,19 @@
                 <div class="stat-value">{{ stats.uptime }}</div>
             </div>
             <div class="stat-card" style="border-left-color: {{ stats.health_color }};">
-                <div class="stat-label">App Memory (Used/Total)</div>
+                <div class="stat-label">App Memory, anonymous (Used/Budget)</div>
                 <div class="stat-value">{{ stats.app_mem_used }} / {{ stats.app_mem_total }}</div>
-                <div style="font-size: 0.9em; color: {{ stats.health_color }};">{{ stats.app_mem_percent }}</div>
+                <div style="font-size: 0.9em; color: {{ stats.health_color }};">{{ stats.app_mem_percent }} · budget: {{ stats.app_mem_budget_source }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Process Memory</div>
+                <div class="stat-value">RSS {{ stats.app_mem_rss }}</div>
+                <div style="font-size: 0.9em; color: #9e9e9e;">file-backed {{ stats.app_mem_file }} · idle budget {{ stats.app_mem_idle_budget }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">cgroup Memory (current/peak)</div>
+                <div class="stat-value">{{ stats.app_mem_cgroup_current }} / {{ stats.app_mem_cgroup_peak }}</div>
+                <div style="font-size: 0.9em; color: #9e9e9e;">{{ stats.app_mem_processes }} process(es) in the cgroup</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">System Memory (Used/Total)</div>
@@ -108,11 +118,21 @@
             </div>
         </div>
 
-        <div class="stat-label">App Memory Usage (Limit: 4GB)</div>
+        <div class="stat-label">Anonymous memory against the budget ({{ stats.app_mem_total }})</div>
         <div class="progress-container">
             <div class="progress-bar {{ stats.health_color }}" style="width: {{ stats.app_mem_percent }};"></div>
         </div>
-        <div style="text-align: right; font-size: 0.9em; margin-bottom: 30px;">{{ stats.app_mem_percent }} of 4GB limit used</div>
+        <div style="text-align: right; font-size: 0.9em; margin-bottom: 30px;">{{ stats.app_mem_percent }} of {{ stats.app_mem_total }} used ({{ stats.app_mem_budget_source }})</div>
+
+        <h2>In-process caches (entries)</h2>
+        <div class="stat-grid">
+            {% for cache in stats.caches %}
+            <div class="stat-card">
+                <div class="stat-label">{{ cache.name }}</div>
+                <div class="stat-value">{{ cache.size }}</div>
+            </div>
+            {% endfor %}
+        </div>
 
         <h2>Official Endpoints (Total: {{ stats.total_requests }})</h2>
         {% if stats.official %}
@@ -183,13 +203,20 @@
             </div>
         </div>
 
-        <h2>System & Process Info</h2>
+        <h2>System &amp; Process Info</h2>
         <table>
             <tr><th>PID</th><td>{{ stats.pid }}</td></tr>
             <tr><th>Python Version</th><td>{{ stats.python_version }}</td></tr>
             <tr><th>Started At</th><td>{{ stats.start_time }}</td></tr>
             <tr><th>Total System RAM</th><td>{{ stats.sys_mem_total }}</td></tr>
             <tr><th>System RAM Usage</th><td>{{ stats.sys_mem_percent }}</td></tr>
+            <tr><th>App RSS</th><td>{{ stats.app_mem_rss }}</td></tr>
+            <tr><th>App anonymous</th><td>{{ stats.app_mem_used }}</td></tr>
+            <tr><th>App file-backed</th><td>{{ stats.app_mem_file }}</td></tr>
+            <tr><th>cgroup current / peak</th><td>{{ stats.app_mem_cgroup_current }} / {{ stats.app_mem_cgroup_peak }}</td></tr>
+            <tr><th>Memory budget</th><td>{{ stats.app_mem_total }} ({{ stats.app_mem_budget_source }})</td></tr>
+            <tr><th>Idle budget per worker</th><td>{{ stats.app_mem_idle_budget }}</td></tr>
+            <tr><th>Processes in cgroup</th><td>{{ stats.app_mem_processes }}</td></tr>
         </table>
     </div>
 </body>
