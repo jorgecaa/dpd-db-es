@@ -96,6 +96,18 @@ budget-relative (green inside it, orange to 1.5x, red beyond) instead of a hardc
 declared dependency because the instrumentator re-exports `Counter`, `Histogram` and
 `Summary` but not `Gauge`.
 
+**Shrinking the db is not free — the ORM blocks it (measured 2026-09-18).** Dropping
+the 11 columns the webapp never reads (`freq_data`, the transliteration columns,
+`created_at`/`updated_at`, `lookup.sinhala`/`thai`/`devanagari`/`rpd`) and vacuuming
+takes `dpd.db` from 2180.7 to **1470.1 MiB (32.6 % smaller) in 67 s** — but serving
+from that copy fails: **125 of 130 golden-oracle responses became
+`Internal Server Error`**, `sqlite3.OperationalError: no such column: lookup.rpd`.
+SQLAlchemy selects every column the model declares, so a column cannot leave the db
+while `db/models.py` still declares it. Any diet therefore starts with `load_only` in
+the webapp's entity loads, not with the db. Design and evidence:
+`kamma/threads/20260918_serving_db_diet/` (`spec.md`: options A/B/C, and why
+`deferred=True` across the project was rejected).
+
 **Cache inventory** (name → key → bound → carrier → eviction → notes):
 
 | Cache | Key | Bound | Carrier | Eviction / notes |
