@@ -520,20 +520,79 @@ byte-identical (`aa63ecff…`), `/status` and `/metrics` live. Canary stopped. N
 
 ## Phase 4 — Host hygiene (needs root; documented, never assumed)
 
-- [ ] **4.1** Unit cleanup: drop the two `Exec*` lines that call the now no-op
+- [~] **4.1** Unit cleanup: drop the two `Exec*` lines that call the now no-op
       preload script, drop `/dev/shm` from `ReadWritePaths`, restore
       `PrivateDevices=yes`; back up the unit first; `systemctl daemon-reload`.
       → verify: diff of the unit pasted in this file; service starts and serves;
       revert command documented.
-- [ ] **4.2** Updater fix in `/usr/local/bin/dpd-update.sh`: the asset is
+      **PREPARED 2026-09-18, waiting on root.** The cleaned unit is written to
+      `deploy/dpd-webapp.service` (untracked host tooling, like its neighbours) and
+      `systemd-analyze verify` accepts it. Diff against the installed unit:
+
+      ```diff
+      -# ── RAM preload: copy dpd.db to /dev/shm before start ───
+      -ExecStartPre=/home/jorge/Code/dpd-db/deploy/preload-db.sh
+       ExecStart=/usr/local/bin/uv run uvicorn exporter.webapp.main:app --host 127.0.0.1 --port 8080
+      -ExecStopPost=/home/jorge/Code/dpd-db/deploy/unload-db.sh
+      +# Guardrail from the 2026-09-18 memory work: measured 124 MiB anonymous idle and
+      +# 239 MiB at steady state, budget 260 MiB. MemoryHigh throttles well above that,
+      +# MemoryMax kills a runaway instead of letting it starve the machine.
+      +MemoryHigh=512M
+      +MemoryMax=1G
+      -ReadWritePaths=/home/jorge/Code/dpd-db /home/jorge/.cache /home/jorge/.local/share/uv /dev/shm
+      +ReadWritePaths=/home/jorge/Code/dpd-db /home/jorge/.cache /home/jorge/.local/share/uv
+      -# /dev/shm access needed for RAM database
+      -PrivateDevices=no
+      +PrivateDevices=yes
+      ```
+
+      Install (needs the password) and revert:
+
+      ```bash
+      sudo cp /etc/systemd/system/dpd-webapp.service /etc/systemd/system/dpd-webapp.service.bak-20260918
+      sudo cp /home/jorge/Code/dpd-db/deploy/dpd-webapp.service /etc/systemd/system/dpd-webapp.service
+      sudo systemctl daemon-reload && sudo systemctl restart dpd-webapp.service
+      # revert: sudo cp /etc/systemd/system/dpd-webapp.service.bak-20260918 /etc/systemd/system/dpd-webapp.service
+      ```
+- [x] **4.2** Updater fix in `/usr/local/bin/dpd-update.sh`: the asset is
       `dpd.db.tar.xz` (the `.tar.bz2` URL returns **HTTP 404** — verified
       2026-09-18) and the GitHub API call should retry instead of dying on a
       transient DNS failure. Ship the corrected file in the repo for `sudo cp`.
       → verify: dry-run/`--check` mode on a scratch dir; the 404 is gone and a
       simulated DNS failure is retried (recorded output).
-- [ ] **4.3** With Phase 1–2 numbers in hand, decide whether to set
+      **DONE 2026-09-18.** Corrected script tracked at `scripts/server/dpd-update.sh`
+      (documented in `scripts/server/README.md`), with `--check`, `--dry-run`,
+      `--force`, a downgrade guard and env overrides (`DPD_API_URL`, `DPD_ASSET_URL`,
+      `DPD_REPO_DIR`, `DPD_SERVICE`, `DPD_RETRY_DELAY`) so it can be exercised
+      without touching the real release. Recorded output:
+
+      ```
+      $ ./scripts/server/dpd-update.sh --check
+      [dpd-update] installed: v0.4.20260728
+      [dpd-update] published: v0.4.20260728
+      [dpd-update] already at the latest version; nothing to do.        # exit 0
+
+      $ ./scripts/server/dpd-update.sh --dry-run
+      [dpd-update] asset check: dpd.db.tar.xz -> HTTP 200 (downloadable)
+      # and the bug it replaces, same day: dpd.db.tar.bz2 -> HTTP 404
+
+      $ DPD_API_URL=http://127.0.0.1:9/nope DPD_RETRY_DELAY=1 ./scripts/server/dpd-update.sh --check
+      [dpd-update] GitHub API attempt 1/5 failed; retrying in 1 s   …  5/5
+      [dpd-update] ERROR: could not reach the GitHub API after 5 attempts   # exit 1
+
+      $ DPD_API_URL=file:///tmp/fake_release.json ./scripts/server/dpd-update.sh   # tag v0.1.20200101
+      [dpd-update] refusing to downgrade. Use --force to install it anyway.  # exit 0
+      ```
+
+      Install: `sudo cp scripts/server/dpd-update.sh /usr/local/bin/dpd-update.sh`.
+- [x] **4.3** With Phase 1–2 numbers in hand, decide whether to set
       `MemoryHigh`/`MemoryMax` on the unit as a hard guardrail, and at what value.
       → verify: decision recorded in `tech.md` with the number that justifies it.
+      **DECIDED 2026-09-18: yes — `MemoryHigh=512M`, `MemoryMax=1G`.** The measured
+      footprint is 124 MiB idle and 239 MiB steady against a 260 MiB budget, so 512
+      MiB is roughly 2x the expected peak (throttle, not kill) and 1 GiB is ~4x
+      (hard stop for a runaway regression). Both travel with the 4.1 unit install;
+      the reasoning is in the unit comment and in `kamma/tech.md`.
 
 ## Phase 5 — Deferred: serving-db diet (separate thread, trigger-gated)
 

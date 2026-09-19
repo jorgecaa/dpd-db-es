@@ -75,6 +75,12 @@ instance: anon goes 222 → **238.8 MiB** while the caches fill (first ~400 requ
   scan + difflib) stays ~370-500 ms and is the next candidate if it ever matters.
 - Every new in-process cache must be bounded and added to the inventory below
   before it lands.
+- **Unit guardrail (decided 2026-09-18, install pending root):**
+  `MemoryHigh=512M` / `MemoryMax=1G` on `dpd-webapp.service` — ~2x the measured
+  steady state (239 MiB) to throttle, ~4x to stop a runaway. The cleaned unit is
+  `deploy/dpd-webapp.service`; it also drops the now-inert `/dev/shm` preload
+  plumbing. If the webapp ever runs several workers, re-derive these numbers and
+  this budget first.
 
 **Where the numbers are published (2026-09-18, Phase 3).** `exporter/webapp/memory.py`
 is the single owner of the facts, the budget and the health rule; `/status` renders
