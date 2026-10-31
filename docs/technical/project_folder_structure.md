@@ -21,20 +21,17 @@ Where are all the parts of the project located?
 │   ├── suttas
 │   └── variants
 ├── db_tests
-│   ├── gui
 │   └── single
 ├── docs
 ├── exporter
 │   ├── analysis
 │   ├── anki
 │   ├── apple_dictionary
-│   ├── chrome_extension
 │   ├── deconstructor
 │   ├── goldendict
 │   ├── grammar_dict
 │   ├── kindle
 │   ├── kobo
-│   ├── mcp
 │   ├── mobile
 │   ├── pdf
 │   ├── share
@@ -61,6 +58,7 @@ Where are all the parts of the project located?
 │   ├── archive
 │   └── threads
 ├── misc
+├── newsletter
 ├── resources
 ├── scripts
 │   ├── add
@@ -76,6 +74,8 @@ Where are all the parts of the project located?
 │   ├── project_management
 │   ├── repo_maintenance
 │   ├── server
+│   ├── server_contrib
+│   ├── server_dpdict
 │   ├── suttas
 │   ├── tutorial
 ├── shared_data
@@ -94,7 +94,7 @@ There are four main parts to the code:
 
 ## Folder details
 
-- **archive/** Retired code kept for reference only. Excluded from linting and type checking.
+- **archive/** Retired code kept for reference only, e.g. the MCP server (`archive/exporter/mcp/`, archived 2026-09-27). Excluded from linting and type checking.
 
 - **audio/** Text-to-speech audio generation and release.
 
@@ -122,7 +122,7 @@ There are four main parts to the code:
 
 	- **grammar/** Grammar data and processing.
 
-	- **inflections/** Populate the `inflection_templates` table and use that to create HTML inflection tables for every word.
+	- **inflections/** Populate the `inflection_templates` table and use that to create HTML inflection tables for every word. Sources: `templates_index.tsv` (one row per template: pattern, like, group) and `templates/<pattern>.tsv` (one grid file per template).
 
 	- **lookup/** Populate the `lookup` table for instant accces to every word in the dictionary.
 
@@ -134,9 +134,7 @@ There are four main parts to the code:
 
 - **db_tests/** Tests to ensure the completeness and accuracy of the Pāḷi database.
 
-	- **gui/** Interactive Flet-based counterpart for running tests and reviewing/approving bulk data corrections (antonyms, family compounds, hyphenations).
-
-	- **single/** Individual, focused audit scripts — one script per linguistic or structural rule.
+	- **single/** Individual, focused audit scripts — one script per linguistic or structural rule. The `add_*` scripts also review and approve bulk data corrections in the terminal (antonyms, family compounds, hyphenations).
 
 - **docs/** Helpful project documentation.
 
@@ -152,9 +150,9 @@ There are four main parts to the code:
 
 	- **apple_dictionary/** Export DPD for Apple Dictionary.
 
-	- **chrome_extension/** Export DPD as a Chrome browser extension.
-
 	- **deconstructor/** Export DPD Deconstructor to GoldenDict and MDict
+
+	- **epitaka/** Copy the mobile DPD database into the local ePitaka app (local only).
 
 	- **goldendict/** Export DPD, EPD, Help and Abbreviations to GoldenDict and MDict
 
@@ -163,8 +161,6 @@ There are four main parts to the code:
 	- **kindle/** Export a light version of DPD for Kindle.
 
 	- **kobo/** Export a light version of DPD for Kobo eReader.
-
-	- **mcp/** Export DPD as an MCP server.
 
 	- **mobile/** Export a light version of DPD for mobile devices.
 
@@ -207,6 +203,8 @@ There are four main parts to the code:
 - **kamma/** The project's work-thread system. `workflow.md` describes the task flow, `project.md` and `tech.md` hold the running project notes, `lessons.md` accumulates what went wrong, and one folder per thread lives in `threads/` (completed ones move to `archive/`).
 
 - **misc/** Assorted reference material and one-off data files, not used by any build step.
+
+- **newsletter/** The monthly newsletter: one folder per month (`<YYYY-MM>/newsletter.md` + `pics/`), the shared footer, and the builder behind `just newsletter-new`, `newsletter-preview` and `newsletter-publish`.
 
 - **resources/** All external resources used by the project, imported as submodules
 

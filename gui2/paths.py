@@ -37,10 +37,26 @@ class Gui2Paths:
         )
         self.additions_path: Path = self.gui2_data_path / "additions.json"
         self.additions_added_path: Path = self.gui2_data_path / "additions_added.json"
+        self.contrib_lines_merged_path: Path = (
+            self.gui2_data_path / "contrib_lines_merged.json"
+        )
         self.filter_presets_path: Path = self.gui2_data_path / "filter_presets.json"
         self.in_commentary_exceptions_path: Path = (
             self.gui2_data_path / "in_commentary_exceptions.txt"
         )
+        self.user_dictionary_path: Path = base_dir / "shared_data/user_dictionary.txt"
+        decon = base_dir / "shared_data/deconstructor"
+        self.sandhi_checked_path: Path = decon / "checked.csv"
+        self.sandhi_corrections_path: Path = decon / "manual_corrections.tsv"
+        self.variant_readings_path: Path = decon / "variant_readings.tsv"
+        self.spelling_mistakes_path: Path = decon / "spelling_mistakes.tsv"
+        self.component_words_ignore_path: Path = (
+            self.gui2_data_path / "component_words_ignore.txt"
+        )
+
+        # A contributor's own exceptions to the db tests; None for user 1,
+        # whose exceptions live in the shared test file.
+        self.db_test_exceptions_path: Path | None = None
 
         # Other paths
         self.find_words_dump_path: Path = (
@@ -55,7 +71,10 @@ class Gui2Paths:
         """Create paths with username-specific data files for contributors."""
         paths = Gui2Paths(base_dir)
         if username and username != "1":
-            data = paths.gui2_data_path
+            # On the server the per-user files live outside the repo, so a pull
+            # never meets a local copy of a file that main tracks.
+            data_dir = os.environ.get("DPD_GUI2_DATA_DIR")
+            data = Path(data_dir) if data_dir else paths.gui2_data_path
             paths.additions_path = data / f"additions_{username}.json"
             paths.additions_added_path = data / f"additions_added_{username}.json"
             paths.corrections_path = data / f"corrections_{username}.json"
@@ -74,4 +93,15 @@ class Gui2Paths:
             paths.commentary_stash_json_path = (
                 data / f"commentary_stash_{username}.json"
             )
+            # The spelling gate blocks saves, so contributors need "add to
+            # dictionary". The shared file is never pushed back from the server.
+            paths.user_dictionary_path = data / f"user_dictionary_{username}.txt"
+            # The Pass1Add helper buttons (Sandhi OK, Add to Sandhi / Variants /
+            # Spelling) write these. Shared, two processes race on them and the
+            # server never pushes them back.
+            paths.sandhi_checked_path = data / f"checked_{username}.csv"
+            paths.sandhi_corrections_path = data / f"manual_corrections_{username}.tsv"
+            paths.variant_readings_path = data / f"variant_readings_{username}.tsv"
+            paths.spelling_mistakes_path = data / f"spelling_mistakes_{username}.tsv"
+            paths.db_test_exceptions_path = data / f"db_test_exceptions_{username}.tsv"
         return paths

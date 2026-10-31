@@ -9,6 +9,7 @@ from rich import print
 from db.db_helpers import get_db_session
 from db.models import BoldDefinition
 from tools.paths import ProjectPaths
+from tools.search_deadline import install_regexp
 
 
 class BoldDefinitionsSearchManager:
@@ -27,6 +28,7 @@ class BoldDefinitionsSearchManager:
     def __init__(self) -> None:
         self.pth = ProjectPaths()
         self.session = get_db_session(self.pth.dpd_db_path)
+        install_regexp(self.session)
 
     def close(self) -> None:
         """Release the session, and with it the connection (the engine is NullPool)."""

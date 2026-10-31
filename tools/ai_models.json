@@ -2,17 +2,7 @@
   "default_models": [
     {
       "provider": "zai",
-      "model": "glm-5.2",
-      "delay": 0
-    },
-    {
-      "provider": "deepseek",
-      "model": "deepseek-v4-pro",
-      "delay": 0
-    },
-    {
-      "provider": "zai",
-      "model": "glm-5-turbo",
+      "model": "glm-5.3-flash",
       "delay": 0
     },
     {
@@ -21,40 +11,25 @@
       "delay": 0
     },
     {
-      "provider": "openrouter",
-      "model": "tencent/hy3:free",
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
       "delay": 0
     },
     {
       "provider": "openrouter",
-      "model": "minimax/minimax-m3",
+      "model": "deepseek/deepseek-v4.1-flash",
       "delay": 0
     },
     {
       "provider": "openrouter",
-      "model": "z-ai/glm-5.2",
+      "model": "xiaomi/mimo-v2.6-flash",
       "delay": 0
     },
     {
       "provider": "openrouter",
-      "model": "xiaomi/mimo-v2.5",
-      "delay": 0
-    },
-    {
-      "provider": "openrouter",
-      "model": "meta-llama/llama-4-scout",
-      "delay": 0
-    },
-    {
-      "provider": "openrouter",
-      "model": "openai/gpt-4.1-nano",
-      "delay": 0
-    },
-    {
-      "provider": "antigravity_cli",
-      "model": "Gemini 3.5 Flash (Low)",
+      "model": "openai/gpt-6-luna",
       "delay": 0,
-      "timeout": 150
+      "timeout": 5
     }
   ],
   "grounded_models": [

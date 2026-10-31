@@ -64,6 +64,30 @@ db-test:
 db-tests:
     uv run python db_tests/run_all_tests.py
 
+# Add missing antonyms to negative words
+add-antonyms:
+    uv run python -m db_tests.single.add_antonyms
+
+# Add the antonym link that is missing on one side
+add-antonyms-sync:
+    uv run python -m db_tests.single.add_antonyms_sync
+
+# Add missing family compounds from negative words
+add-fc-neg:
+    uv run python -m db_tests.single.add_family_compound_neg
+
+# Add missing family compounds from su, dur, sa and nir words
+add-fc-su-dur:
+    uv run python -m db_tests.single.add_family_compound_su_dur
+
+# Add missing family compounds from taddhita words
+add-fc-taddhita:
+    uv run python -m db_tests.single.add_family_compound_taddhita
+
+# Choose one spelling for long hyphenated words
+add-hyphenations:
+    uv run python -m db_tests.single.add_hyphenations
+
 # Run phonetic changes test
 test-phonetic:
     uv run python -m db_tests.single.add_phonetic_changes
@@ -71,6 +95,18 @@ test-phonetic:
 # Find inconsistent sandhi apostrophe contractions
 test-sandhi:
     uv run python db_tests/single/test_sandhi_errors.py
+
+# Suggest a second construction line from longer compound parts
+test-compounds:
+    uv run python db_tests/single/test_longest_compound_parts.py
+
+# Repoint verbal forms at a present verb or a root
+test-verb-grammar:
+    uv run python db_tests/single/test_verb_grammar_sync.py
+
+# Show which verbal forms need repointing, without writing
+test-verb-grammar-dry-run:
+    uv run python db_tests/single/test_verb_grammar_sync.py --dry-run
 
 # ===== SUTTA ANALYSIS =====
 
@@ -107,6 +143,10 @@ lint:
 # Run pyrefly type checker across the whole repo (config in pyproject.toml)
 typecheck:
     uv run pyrefly check
+
+# Check for unused, missing and transitive dependencies (config in pyproject.toml); exits 1 while any finding remains
+deps:
+    uv run deptry .
 
 # Show project version
 version:
@@ -182,6 +222,10 @@ export-mobile:
 # Export TPR data for Tipitaka Pali Reader
 export-tpr:
     uv run python exporter/tpr/tpr_exporter.py
+
+# Copy the mobile DPD database into the local ePitaka app
+export-epitaka:
+    uv run python exporter/epitaka/epitaka_exporter.py
 
 # Export TBW format only
 export-tbw:
@@ -280,6 +324,12 @@ css:
 backup:
     uv run python db/backup_tsv/backup_dpd_headwords_and_roots.py
 
+# Merge the server's contributions branch into main, then fold the flag files into the shared files
+contrib-merge:
+    git fetch origin contributions
+    git merge --no-edit origin/contributions
+    uv run scripts/server_contrib/merge_contrib_files.py
+
 # Update Anki cards from the DB
 anki:
     uv run exporter/anki/anki_updater.py
@@ -292,14 +342,17 @@ anki-templates:
 anki-apkg:
     uv run exporter/anki/anki_apkg_exporter.py
 
-# Build docs/newsletters.md from Gmail (run after labelling the sent mail "DPD Mailers")
-newsletter:
-    uv run python scripts/build/newsletter_scraper.py
+# Start a new month's newsletter from the template (newsletter/<YYYY-MM>/)
+newsletter-new month:
+    uv run newsletter/newsletter_build.py {{month}} --init
 
-# Reprocess all newsletters from scratch
-newsletter-fresh:
-    rm -f scripts/build/newsletter_processed.json
-    uv run python scripts/build/newsletter_scraper.py
+# Live preview in the browser, rebuilt on every save (default: newest month)
+newsletter-preview month="":
+    uv run newsletter/newsletter_build.py {{month}} --watch
+
+# Gmail draft with the pics embedded; on uposatha days also the docs newsletters page
+newsletter-publish month="":
+    uv run newsletter/newsletter_build.py {{month}} --publish
 
 # Generate changelog and release notes
 changelog:
@@ -310,6 +363,7 @@ docs-update:
     uv run python tools/docs_update_abbreviations.py
     uv run python tools/docs_update_bibliography.py
     uv run python tools/docs_update_thanks.py
+    uv run python tools/docs_update_how_to_cite.py
     uv run python tools/docs_changelog_and_release_notes.py
 
 # Open most recent log file in browser
@@ -341,7 +395,7 @@ dpdict-push:
     #!/usr/bin/env bash
     set -e
     login=$(just _dpdict-login)
-    scp scripts/server/update-dpd.sh "$login:~/update-dpd.sh"
+    scp scripts/server_dpdict/update-dpd.sh "$login:~/update-dpd.sh"
     ssh "$login" "chmod +x ~/update-dpd.sh"
 
 # ===== CONE DICTIONARY IMPORT =====
@@ -372,11 +426,11 @@ cpd-extras:
 
 # Turn on deconstructor regeneration
 decon-on:
-    uv run python -c "from tools.configger import config_update; config_update('generate', 'deconstructor', 'yes')"
+    uv run python -c "from tools.configger import config_update; config_update('generate', 'deconstructor', 'yes'); config_update('exporter', 'make_deconstructor', 'yes')"
 
 # Turn off deconstructor regeneration
 decon-off:
-    uv run python -c "from tools.configger import config_update; config_update('generate', 'deconstructor', 'no')"
+    uv run python -c "from tools.configger import config_update; config_update('generate', 'deconstructor', 'no'); config_update('exporter', 'make_deconstructor', 'no')"
 
 # Run the Go deconstructor and sync its output into the lookup db
 decon:

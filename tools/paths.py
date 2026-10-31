@@ -13,8 +13,6 @@ class ProjectPaths:
         # root
         self.docs_dir = base_dir / "docs"
         self.dpd_db_path = base_dir / "dpd.db"
-        self.gmail_credentials_path = base_dir / "credentials.json"
-        self.gmail_token_path = base_dir / "token.json"
         self.mk_docs_yaml = base_dir / "mkdocs.yaml"
         self.pyproject_path = base_dir / "pyproject.toml"
         self.temp_dir = base_dir / "temp"
@@ -55,8 +53,12 @@ class ProjectPaths:
 
         # db/inflections
         self.inflection_templates_path = (
-            base_dir / "db/inflections/inflection_templates.xlsx"
+            base_dir / "misc/inflection_templates_legacy.xlsx"
         )
+        self.inflection_templates_index_path = (
+            base_dir / "db/inflections/templates_index.tsv"
+        )
+        self.inflection_templates_dir = base_dir / "db/inflections/templates"
 
         # db/sanskrit
         self.root_families_sanskrit_path = (
@@ -96,6 +98,12 @@ class ProjectPaths:
         self.idioms_exceptions_dict = (
             base_dir / "db_tests/single/fixme/test_idioms.json"
         )
+        self.longest_compound_parts_exceptions_path = (
+            base_dir / "db_tests/single/test_longest_compound_parts.json"
+        )
+        self.longest_compound_parts_endings_path = (
+            base_dir / "db_tests/single/test_longest_compound_parts_endings.json"
+        )
         self.neg_compound_exceptions = (
             base_dir / "db_tests/single/test_neg_compound_exceptions.json"
         )
@@ -107,6 +115,9 @@ class ProjectPaths:
         )
         self.root_family_prefix_exceptions_path = (
             base_dir / "db_tests/single/test_root_family_vs_construction_prefixes.json"
+        )
+        self.verb_grammar_sync_exceptions_path = (
+            base_dir / "db_tests/single/test_verb_grammar_sync.json"
         )
         self.phonetic_changes_vowels_path = (
             base_dir / "db_tests/single/add_phonetic_changes_vowels.tsv"
@@ -133,18 +144,21 @@ class ProjectPaths:
             base_dir / "db_tests/single/fixme/add_word_family_finder.pickle"
         )
 
-        # db_tests/gui
+        # db_tests/single
         self.add_antonyms_sync_dict = (
-            base_dir / "db_tests/gui/add_antonyms_sync_dict.json"
+            base_dir / "db_tests/single/add_antonyms_sync.json"
         )
         self.add_hyphenations_config_path = (
-            base_dir / "db_tests/gui/add_hyphenations.json"
+            base_dir / "db_tests/single/add_hyphenations.json"
         )
+
+        self.citation_cff_path = base_dir / "CITATION.cff"
 
         # docs
         self.docs_abbreviations_md_path = base_dir / "docs/abbreviations.md"
         self.docs_bibliography_md_path = base_dir / "docs/bibliography.md"
         self.docs_changelog_md_path = base_dir / "docs/changelog.md"
+        self.docs_how_to_cite_md_path = base_dir / "docs/how_to_cite.md"
         self.docs_newsletters_md_path = base_dir / "docs/newsletters.md"
         self.docs_thanks_md_path = base_dir / "docs/thanks.md"
 
@@ -209,7 +223,7 @@ class ProjectPaths:
 
         # exporter/kindle
         self.epub_dir = base_dir / "exporter/kindle/epub"
-        self.kindlegen_path = base_dir / "exporter/kindle/kindlegen"
+        self.kindling_path = base_dir / "exporter/kindle/kindling-cli"
 
         # exporter/kindle/epub/OEBPS
         self.epub_content_opf_path = base_dir / "exporter/kindle/epub/OEBPS/content.opf"
@@ -301,6 +315,7 @@ class ProjectPaths:
         self.webapp_home_simple_css_path = (
             base_dir / "exporter/webapp/static/home_simple.css"
         )
+        self.webapp_cc_icons_path = base_dir / "exporter/webapp/static/cc_icons.svg"
         self.webapp_js_path = base_dir / "exporter/webapp/static/dpd.js"
         self.webapp_logo_dark_svg_path = (
             base_dir / "exporter/webapp/static/dpd-logo-dark.svg"
@@ -540,6 +555,16 @@ class ProjectPaths:
             / "resources/other-dictionaries/dictionaries/nyanatiloka/source/nyanatiloka.json"
         )
 
+        # resources/other-dictionaries/dictionaries/pts
+        self.pts_css_path = (
+            base_dir / "resources/other-dictionaries/dictionaries/pts/pts.css"
+        )
+
+        # resources/other-dictionaries/dictionaries/pts/source
+        self.pts_source_path = (
+            base_dir / "resources/other-dictionaries/dictionaries/pts/source/pts.json"
+        )
+
         # resources/other-dictionaries/dictionaries/mw
         self.mw_css_path = (
             base_dir / "resources/other-dictionaries/dictionaries/mw/mw.css"
@@ -614,6 +639,10 @@ class ProjectPaths:
             base_dir
             / "resources/tpr_downloads/download_source_files/download_list.json"
         )
+        self.tpr_download_list_2_path = (
+            base_dir
+            / "resources/tpr_downloads/download_source_files/download_list_2.json"
+        )
 
         # resources/tpr_downloads/release_zips
         self.tpr_beta_path = (
@@ -621,11 +650,6 @@ class ProjectPaths:
         )
         self.tpr_release_path = (
             base_dir / "resources/tpr_downloads/release_zips/dpd.zip"
-        )
-
-        # scripts/build
-        self.newsletter_processed_json = (
-            base_dir / "scripts/build/newsletter_processed.json"
         )
 
         # scripts/extractor

@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
+from tools.server_mode import is_headless_server
+
 
 @dataclass
 class PhoneticChangeResult:
@@ -113,7 +115,7 @@ class PhoneticChangeManager:
         """
         return self.rules
 
-    def _clean_headword_data(self, headword) -> tuple[str, str]:
+    def clean_headword_data(self, headword) -> tuple[str, str]:
         """Extract and clean construction and base from headword.
 
         Args:
@@ -124,11 +126,11 @@ class PhoneticChangeManager:
         """
         construction_clean = headword.construction_clean or ""
         construction_clean = re.sub(r"√", "", construction_clean)
-        construction_clean = re.sub(r"\\*", "", construction_clean)
+        construction_clean = re.sub(r"\*", "", construction_clean)
 
         base_clean = headword.root_base_clean or ""
         base_clean = re.sub(r"√", "", base_clean)
-        base_clean = re.sub(r"\\*", "", base_clean)
+        base_clean = re.sub(r"\*", "", base_clean)
 
         return construction_clean, base_clean
 
@@ -233,7 +235,7 @@ class PhoneticChangeManager:
             return None
 
         # Clean construction and base
-        construction_clean, base_clean = self._clean_headword_data(headword)
+        construction_clean, base_clean = self.clean_headword_data(headword)
 
         # Check the specific rule
         return self._check_rule_logic(headword, rule, construction_clean, base_clean)
@@ -247,7 +249,7 @@ class PhoneticChangeManager:
     ) -> PhoneticChangeResult | None:
         """Check a rule against a headword with precomputed cleaned strings.
 
-        Use this in batch loops to avoid recomputing _clean_headword_data
+        Use this in batch loops to avoid recomputing clean_headword_data
         for every (headword, rule) pair.
         """
         if not headword.construction:
@@ -279,7 +281,7 @@ class PhoneticChangeManager:
             return None
 
         # Clean construction and base (once for all rules)
-        construction_clean, base_clean = self._clean_headword_data(headword)
+        construction_clean, base_clean = self.clean_headword_data(headword)
 
         # Check all rules
         for rule in self.rules:
@@ -307,7 +309,7 @@ class PhoneticChangeManager:
         if not headword.construction:
             return results, ""
 
-        construction_clean, base_clean = self._clean_headword_data(headword)
+        construction_clean, base_clean = self.clean_headword_data(headword)
 
         for rule in self.rules:
             result = self._check_rule_logic(
@@ -359,6 +361,9 @@ class PhoneticChangeManager:
             FileNotFoundError: If the TSV file does not exist.
             RuntimeError: If unable to open the file with any method.
         """
+        if is_headless_server():
+            raise RuntimeError("not available on the server")
+
         if not self.tsv_path.exists():
             raise FileNotFoundError(f"TSV file not found: {self.tsv_path}")
 

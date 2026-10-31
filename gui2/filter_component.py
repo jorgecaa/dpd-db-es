@@ -10,13 +10,15 @@ from gui2.filter_logic import (
     clamp_page_index,
     compute_column_widths,
     effective_total,
+    find_duplicate_lemma_1,
     group_changes_by_id,
     page_label,
     track_cell_change,
     validate_regex_patterns,
 )
 from gui2.toolkit import ToolKit
-from gui2.ui_utils import show_global_snackbar
+from gui2.contributor_tabs import READ_ONLY_MESSAGE
+from gui2.ui_utils import field_border, is_mounted, request_focus, show_global_snackbar
 from tools.spelling import CustomSpellChecker
 
 PAGE_SIZE = 100
@@ -29,7 +31,7 @@ class DpdDatatable(ft.DataTable):
             columns=columns,
             rows=rows,
             data_text_style=ft.TextStyle(size=12, color=ft.Colors.GREY_300),
-            border=ft.border.all(2, ft.Colors.BLACK),
+            border=ft.Border.all(2, ft.Colors.BLACK),
             horizontal_lines=ft.border.BorderSide(1, ft.Colors.GREY_300),
             vertical_lines=ft.border.BorderSide(1, ft.Colors.GREY_300),
             heading_row_color=ft.Colors.BLUE_900,
@@ -58,6 +60,11 @@ class ColumnText(ft.Text):
 CELL_PADDING = 4
 
 
+def cell_border(color: ft.ColorValue) -> ft.OutlineInputBorder:
+    """A grid cell's square border, in the colour the spell check asks for."""
+    return field_border(color=color, width=3, radius=0)
+
+
 class CellText(ft.Container):
     """Read-only cell content. Tapping the cell swaps in a CellTextField."""
 
@@ -69,7 +76,7 @@ class CellText(ft.Container):
                 color=ft.Colors.RED if misspelled else ft.Colors.GREY_300,
             ),
             width=width,
-            padding=ft.padding.all(CELL_PADDING),
+            padding=ft.Padding.all(CELL_PADDING),
         )
 
 
@@ -83,11 +90,8 @@ class CellTextField(ft.TextField):
             width=width,
             multiline=True,
             dense=True,
-            content_padding=ft.padding.all(CELL_PADDING),
-            border_radius=0,
-            border=ft.InputBorder.OUTLINE,
-            border_width=3,
-            border_color=ft.Colors.TRANSPARENT,
+            content_padding=ft.Padding.all(CELL_PADDING),
+            border=cell_border(ft.Colors.TRANSPARENT),
             text_align=ft.TextAlign.LEFT,
             text_style=ft.TextStyle(
                 size=12,
@@ -107,11 +111,12 @@ class FilterComponent(ft.Column):
         display_filters: list[str] | None = None,
         limit: int | None = None,
         sort_column: str | None = None,
+        read_only: bool = False,
     ) -> None:
         super().__init__(expand=True, spacing=5, controls=[])
-        self.page: ft.Page = page
         self.toolkit: ToolKit = toolkit
-        self.spellchecker = CustomSpellChecker()
+        self.read_only = read_only
+        self.spellchecker = CustomSpellChecker(toolkit.paths.user_dictionary_path)
 
         # State management
         self.filtered_results: list[DpdHeadword] = []
@@ -166,9 +171,7 @@ class FilterComponent(ft.Column):
                 ft.Container(
                     content=ft.Row(
                         [
-                            ft.ElevatedButton(
-                                "Save Changes", on_click=self._save_changes
-                            ),
+                            ft.Button("Save Changes", on_click=self._save_changes),
                             self.prev_page_button,
                             self.page_label_text,
                             self.next_page_button,
@@ -176,7 +179,7 @@ class FilterComponent(ft.Column):
                         ],
                         spacing=8,
                     ),
-                    padding=ft.padding.symmetric(horizontal=10, vertical=6),
+                    padding=ft.Padding.symmetric(horizontal=10, vertical=6),
                 ),
             ]
         )
@@ -221,7 +224,7 @@ class FilterComponent(ft.Column):
         try:
             self.update()
         except Exception:
-            if self.page:
+            if is_mounted(self):
                 self.page.update()
 
     # --- APPLY FILTERS (off the UI thread) ---
@@ -416,13 +419,16 @@ class FilterComponent(ft.Column):
         cell.content = text_field
         cell.on_tap = None
         self._safe_update()
-        text_field.focus()
+        request_focus(text_field)
 
     # --- SAVE ---
 
     def _save_changes(self, e: ft.ControlEvent | None) -> None:
         """Save any changes back to the database: one commit for the whole
         batch, one relationship-detector invalidation."""
+        if self.read_only:
+            show_global_snackbar(self.page, READ_ONLY_MESSAGE, "warning")
+            return
         if not self.modified_cells:
             show_global_snackbar(self.page, "No changes to save", "info", 3000)
             return
@@ -443,6 +449,16 @@ class FilterComponent(ft.Column):
         db_session = self.toolkit.db_manager.db_session
         try:
             changes_by_id = group_changes_by_id(self.modified_cells)
+
+            duplicates = find_duplicate_lemma_1(db_session, changes_by_id)
+            if duplicates:
+                show_global_snackbar(
+                    self.page,
+                    f"lemma_1 already exists: {', '.join(duplicates)}",
+                    "error",
+                    6000,
+                )
+                return
 
             for headword_id, changes in changes_by_id.items():
                 record = db_session.query(DpdHeadword).filter_by(id=headword_id).first()
@@ -484,15 +500,15 @@ class FilterComponent(ft.Column):
 
     def _check_and_set_spell_border(self, field: ft.TextField, value: str):
         if not value:
-            field.border_color = ft.Colors.TRANSPARENT
+            field.border = cell_border(ft.Colors.TRANSPARENT)
             return
 
         clean_value = re.sub(r"<[^>]+>", "", value)
 
         if self.spellchecker.has_misspellings(clean_value):
-            field.border_color = ft.Colors.RED
+            field.border = cell_border(ft.Colors.RED)
         else:
-            field.border_color = ft.Colors.TRANSPARENT
+            field.border = cell_border(ft.Colors.TRANSPARENT)
 
     def _spell_check_cell(self, e: ft.ControlEvent) -> None:
         """Spell check cell content and update border."""
@@ -500,5 +516,5 @@ class FilterComponent(ft.Column):
         try:
             e.control.update()
         except Exception:
-            if self.page:
+            if is_mounted(self):
                 self.page.update()

@@ -3,6 +3,8 @@
 import sys
 import types
 
+import pytest
+
 sys.modules.setdefault(
     "aksharamukha",
     types.SimpleNamespace(
@@ -136,3 +138,87 @@ def test_sutta_info_s_4nt_link_none_without_sc_code() -> None:
     su = SuttaInfo()
 
     assert su.s_4nt_link is None
+
+
+@pytest.mark.parametrize(
+    "sc_code, expected",
+    [
+        ("MN1", "mn1"),
+        ("SN1.1", "sn1.1"),
+        ("SN39.1-15", "sn39.1-15"),
+        ("DHP383-423", "dhp383-423"),
+        ("THIG16.1", "thig16.1"),
+    ],
+)
+def test_sutta_info_dhamma_gift_lowercases_the_sutta_code(
+    sc_code: str, expected: str
+) -> None:
+    su = SuttaInfo()
+    su.sc_code = sc_code
+
+    assert su.dhamma_gift == f"https://dhamma.gift/{expected}"
+
+
+def test_sutta_info_dhamma_gift_none_without_sc_code() -> None:
+    su = SuttaInfo()
+
+    assert su.dhamma_gift is None
+
+
+# One live row carries an empty-string sc_code rather than NULL.
+def test_sutta_info_dhamma_gift_none_for_empty_sc_code() -> None:
+    su = SuttaInfo()
+    su.sc_code = ""
+
+    assert su.dhamma_gift is None
+
+
+@pytest.mark.parametrize(
+    "sc_code, expected",
+    [
+        ("AN2.1-10", "AN"),
+        ("AN1.1-10", "AN"),
+        ("AN2.11-20", "AN"),
+        ("SN12.1-10", "SN"),
+        ("SN39.1-15", "SN"),
+        ("AN3.1", "AN"),
+        ("SN1.1", "SN"),
+        ("MN1", "MN"),
+        ("DN1", "DN"),
+        ("SNP1.1", "SNP"),
+        ("THAG1.1", "THAG"),
+        ("ITI1", "ITI"),
+        ("DHP1-20", "DHP"),
+        ("DHP90-00", "DHP"),
+        ("UD1.1", "UD"),
+    ],
+)
+def test_sutta_info_sc_book_code_is_only_the_leading_letters(
+    sc_code: str, expected: str
+) -> None:
+    su = SuttaInfo()
+    su.sc_code = sc_code
+
+    assert su.sc_book_code == expected
+
+
+def test_sutta_info_tbw_range_code_has_no_hyphen_in_book_folder() -> None:
+    su = SuttaInfo()
+    su.book_code = "AN"
+    su.sc_code = "AN2.1-10"
+
+    assert su.tbw == "https://thebuddhaswords.net/an/an2.1-10.html"
+    assert su.tbw_legacy == "https://f.dhamma.gift/bw/an/an2.1-10.html"
+
+
+def test_sutta_info_sc_vagga_link_samyutta_with_range_sc_code() -> None:
+    su = SuttaInfo()
+    su.dpd_code = "SN39"
+    su.dpd_sutta = "sāmaṇḍakasaṃyutta"
+    su.sc_code = "SN39.1-15"
+
+    assert su.is_samyutta is True
+    assert (
+        su.sc_vagga_link
+        == "https://suttacentral.net/pitaka/sutta/linked/sn/sn-salayatanavaggasamyutta/sn39"
+    )

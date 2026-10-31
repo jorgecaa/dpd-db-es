@@ -11,6 +11,7 @@ from tools.paths import ProjectPaths
 if TYPE_CHECKING:
     from gui2.additions_manager import AdditionsManager
     from gui2.corrections_manager import CorrectionsManager
+    from gui2.example_stash_manager import ExampleStashManager
     from gui2.wordfinder_popup import WordFinderPopup
     from tools.ai_manager import AIManager
     from tools.bold_definitions_search import BoldDefinitionsSearchManager
@@ -50,12 +51,24 @@ class ToolKit:
         self.project_paths = ProjectPaths()
         username = resolve_username() or "1"
         self.paths: Gui2Paths = Gui2Paths.for_user(username)
-        self.db_test_manager: DbTestManager = DbTestManager()
+        self.db_test_manager: DbTestManager = DbTestManager(
+            self.paths.db_test_exceptions_path
+        )
         self.test_manager: GuiTestManager = GuiTestManager(self)
         self.speech_marks_manager: SpeechMarkManager = SpeechMarkManager()
 
         self.history_manager: HistoryManager = HistoryManager(self)
-        self.db_manager: DatabaseManager = DatabaseManager()
+        self.db_manager: DatabaseManager = DatabaseManager(
+            self.paths.sandhi_checked_path
+        )
+        if username != "1":
+            # Lazy lambda: the managers are built on first lookup, not here.
+            self.db_manager.set_overlay(
+                lambda: (
+                    self.corrections_manager.corrections_dict,
+                    self.additions_manager.additions_dict,
+                )
+            )
         self.pass2_exceptions_manager: Pass2ExceptionsFileManager = (
             Pass2ExceptionsFileManager(self)
         )
@@ -72,9 +85,11 @@ class ToolKit:
         self.appbar_updater: AppBarUpdater = AppBarUpdater(self.page)
         self.daily_log: DailyLog = DailyLog(self)
         self.see_manager: SeeFileManager = SeeFileManager()
-        self.variants: VariantReadingFileManager = VariantReadingFileManager()
+        self.variants: VariantReadingFileManager = VariantReadingFileManager(
+            self.paths.variant_readings_path
+        )
         self.spelling_mistakes: SpellingMistakesFileManager = (
-            SpellingMistakesFileManager()
+            SpellingMistakesFileManager(self.paths.spelling_mistakes_path)
         )
 
         self.sandhi_files_manager: SandhiFileManager = SandhiFileManager(self)
@@ -124,6 +139,15 @@ class ToolKit:
         from gui2.corrections_manager import CorrectionsManager
 
         return self._lazy("corrections_manager", lambda: CorrectionsManager(self))
+
+    @property
+    def example_stash_manager(self) -> ExampleStashManager:
+        from gui2.example_stash_manager import ExampleStashManager
+
+        # One instance for example_1 and example_2: each instance caches the
+        # file in memory and rewrites all of it on save, so separate
+        # instances overwrite each other's stash.
+        return self._lazy("example_stash_manager", lambda: ExampleStashManager(self))
 
     @property
     def wordfinder_popup(self) -> WordFinderPopup:

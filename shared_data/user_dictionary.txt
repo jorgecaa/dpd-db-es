@@ -68,6 +68,7 @@ accordant
 accurses
 accusative
 acerifolium
+acidissima
 Aciravatī
 Acorus
 acquirement
@@ -143,6 +144,7 @@ analysing
 Anamataggasaṃyuttaṃ
 Ananda
 anchorite
+Andhakavinda
 Andhra
 Andhropogon
 Andropogon
@@ -251,6 +253,7 @@ ati
 atipāteti
 Atittisutta
 atta
+attache
 attaches
 attainments
 atthi
@@ -350,6 +353,7 @@ bewails
 Beḷuva
 bh
 bha
+Bhaddaji
 Bhaddasārī
 Bhaddekarattasutta
 Bhaddiya
@@ -448,11 +452,13 @@ Buddha's
 Buddhadatta
 Buddhaghosa
 Buddhaghosa's
+buddhahood
 Buddhappiya
 Buddhas
 Budhanania
 bulubulu
 bumpiness
+Bungarus
 burmanniana
 Butea
 byāyāma
@@ -465,6 +471,7 @@ Bījaka's
 c.
 Cadamba
 caerulea
+caeruleus
 Caesalpina
 cajoler
 calamus
@@ -645,6 +652,7 @@ Curcuma
 curlew
 curādigaṇa
 Cymbopogon
+Cynodon
 Cyperus
 Cyprinus
 cā
@@ -659,6 +667,7 @@ cūḷavagga
 d
 Dabba
 dacoit
+dactylon
 daddabha
 dadāti
 daemoness
@@ -718,6 +727,7 @@ desiderative
 desireless
 desirelessness
 desisted
+desmodium
 Desmostachya
 determinative
 detestation
@@ -781,9 +791,11 @@ disembarks
 disentangled
 disfiguration
 dishevelling
+dishonour
 disinterestedly
 disinvesting
 disjoined
+dislikable
 dismounts
 disorderliness
 disownment
@@ -985,7 +997,9 @@ finiteness
 firma
 firstness
 fisherman's
+fisherwoman
 fissured
+fistedness
 fistulosum
 flambeau
 flatterer
@@ -1097,6 +1111,7 @@ goldwork
 goo-gooing
 goodness
 gooseflesh
+goosegrass
 Gopaka
 gopānasī
 gossipmongering
@@ -1180,6 +1195,7 @@ hitman
 Holarrhena
 honeyball
 honour
+honourable
 honoured
 honouring
 honours
@@ -1362,6 +1378,7 @@ Kadali
 kahāpaṇa
 Kailash
 Kajaṅgalā
+Kakudha
 Kakusandha
 Kalanda's
 Kaliṅgas
@@ -1577,6 +1594,7 @@ likhā
 limbed
 limitlessly
 limitlessness
+Limonia
 linch-pin
 Lindica
 Linum
@@ -1717,6 +1735,7 @@ meritless
 Meru
 metathesized
 metre
+metres
 metrical
 Mettagū's
 Mettaya
@@ -1845,6 +1864,8 @@ muddle-mindedness
 muddleheadedness
 muditā
 Muggala
+multi
+multi-coloured
 mung
 munja
 Muricantum
@@ -1885,6 +1906,7 @@ mūla
 mūlaghaccaṃ
 na
 Nadubbhiyasuttaṃ
+Naja
 nakhā
 Nakula
 Nanda
@@ -1899,6 +1921,7 @@ nd
 Neem
 neem
 negundo
+neighbour
 neighbourhood
 neighbouring
 nellie
@@ -1906,6 +1929,7 @@ Nelumbo
 Nerañjara
 Nerium
 Neru
+Nesajjikasutta
 nescience
 nestless
 newel
@@ -1989,6 +2013,7 @@ one's
 one-placed-ness
 one-sidedly
 onomatopoeic
+oojeinense
 oojeinensis
 optative
 optionality
@@ -2184,10 +2209,12 @@ porāṇametaṃ
 post
 post-mortem
 Posāla's
+Potali
 Potaliya
 potsherd
 Poṭṭhapāda
 ppa
+praisingly
 prajuhoti
 prakṛti
 pranking
@@ -2409,6 +2436,7 @@ sagehood
 Sagāthakasutta
 saha
 Sahampati
+Sahampati's
 sahasakkha
 sakhilabhāve
 Sakka
@@ -2440,6 +2468,7 @@ samādhi
 samāpatti
 Sanaṅkumāra
 Sandaka
+sandan
 sandbank
 sandbar
 Sandhi
@@ -2447,6 +2476,7 @@ sandhi
 sannayhi
 Sanseveria
 Sansevieria
+Santalum
 Sappan
 Sappinikā
 Sappurisasuttaṃ
@@ -2523,6 +2553,7 @@ serrata
 sesemum
 Setabyā
 shakeable
+shatterer
 shaveling
 sheafs
 sheldrake
@@ -2546,6 +2577,7 @@ Silāyūpasuttaṃ
 Simsapa
 Sinapis
 Sindh
+sinensis
 Sineru
 single-halled
 Sinh
@@ -2835,6 +2867,7 @@ tight-fistedness
 Tikanipāta
 Tikaṇṇa
 timbaru
+timeously
 tinctoria
 tinctorius
 tinduka
@@ -2912,9 +2945,11 @@ Udāna
 Udāyi
 Udāyī
 Ugga
+Uggaha
 Uggata
 ugghāṭeti
 Uggo
+Ujjain
 Ujjaya
 Ujjenī
 Ujuññā
@@ -2988,6 +3023,7 @@ underbrush
 underlain
 underperforming
 undersheet
+undesignated
 undiminishable
 undiscoverable
 undispersed
@@ -3102,12 +3138,15 @@ unstartled
 unstated
 unsteadiness
 unstealable
+unsticks
 unstitch
 unsubmissive
 unsuffused
+unsupportive
 unsurpassable
 unswept
 untaught
+unthatched
 unthinkingly
 untrainable
 untruthfully
@@ -3330,6 +3369,7 @@ wieldy
 wifehood
 winnows
 witnesser
+Woodapple
 wooled
 woolled
 woollen

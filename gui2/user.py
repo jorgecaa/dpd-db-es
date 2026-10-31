@@ -5,6 +5,7 @@ import flet as ft
 
 from tools.configger import config_read, config_update
 from tools.server_mode import resolve_role
+from gui2.ui_utils import field_border, set_error
 
 __all__ = ["UsernameManager", "resolve_role", "resolve_username"]
 
@@ -21,8 +22,14 @@ class UsernameManager:
     def __init__(self, page: ft.Page):
         self.page = page
         self.username: str | None = resolve_username()
+        # The user the toolkit routed its files with at start-up (no username
+        # means the primary user). A username entered later in the first-run
+        # dialog must not change where this session saves, so is_not_primary
+        # reads this, not self.username.
+        self.routed_username: str = self.username or "1"
         self.role: str | None = resolve_role()
         self.username_field = ft.TextField(
+            border=field_border(),
             label="Enter your username",
             autofocus=True,
             on_submit=self._save_username_and_close_dialog,
@@ -33,14 +40,13 @@ class UsernameManager:
             content=ft.Column(
                 [
                     ft.Text("Please enter your username."),
+                    ft.Text("This takes effect the next time you start the app."),
                     self.username_field,
                 ],
                 tight=True,
             ),
             actions=[
-                ft.ElevatedButton(
-                    "Save", on_click=self._save_username_and_close_dialog
-                ),
+                ft.Button("Save", on_click=self._save_username_and_close_dialog),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -54,7 +60,7 @@ class UsernameManager:
     def get_username(self) -> None:
         self.username: str | None = resolve_username()
         if not self.username:
-            self.page.open(self.username_dialog)
+            self.page.show_dialog(self.username_dialog)
             self.page.update()
 
     def _save_username_and_close_dialog(self, e: ft.ControlEvent) -> None:
@@ -65,8 +71,8 @@ class UsernameManager:
             self.username_dialog.open = False
             self.page.update()
         else:
-            self.username_field.error_text = "Username cannot be empty!"
+            set_error(self.username_field, "Username cannot be empty!")
             self.username_field.update()
 
     def is_not_primary(self) -> bool:
-        return self.username != "1"
+        return self.routed_username != "1"

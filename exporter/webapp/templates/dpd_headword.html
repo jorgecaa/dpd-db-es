@@ -1150,7 +1150,7 @@
             <td>{{d.i.synonym}}</td>
         </tr>
         {% endif %}
-        
+
         {% if d.i.variant and not d.i.var_phonetic and not d.i.var_text %}
         <tr>
             <th>Variant</th>
@@ -1162,22 +1162,22 @@
             <th>Phonetic Variant</th>
             <td>{{d.i.var_phonetic}}</td>
         </tr>
-        {% endif %} 
-        
+        {% endif %}
+
         {% if d.i.var_text %}
         <tr>
             <th>Textual Variant</th>
             <td>{{d.i.var_text}}</td>
         </tr>
         {% endif %}
-        
+
         {% if d.i.commentary and d.i.commentary !="-" %}
         <tr>
             <th>Commentary</th>
             <td>{{d.i.commentary|safe}}</td>
         </tr>
         {% endif %}
-        
+
         {% if d.i.notes %}
         <tr>
             <th>Notes</th>
@@ -1367,7 +1367,7 @@
     <div id="family_compound_{{d.i.lemma_1_}}" class="dpd content hidden">
         <p class="heading underlined">
             <b> {{d.fc[0].count}} </b>
-            compounds which contains
+            {% if d.fc[0].count == 1 %}compound which contains{% else %}compounds which contain{% endif %}
             <b> {{d.fc[0].compound_family}} </b>
             {{d.fc[0].html_es|safe}}
         </p>
@@ -1406,8 +1406,8 @@
             <b>{{f.count}}</b>
             compounds which contain
             <b>{{f.compound_family}}</b>
-            <a class="jump" href="#{{d.i.lemma_1_}}cf_top"> ⤴ </a>
             {% endif %}
+            <a class="jump" href="#{{d.i.lemma_1_}}cf_top"> ⤴ </a>
         </p>
         {{f.html_es|safe}} {% endfor %}
         <p class="underline overlined">
@@ -1571,9 +1571,17 @@
     {% endif %}
 
     <!-- feedback -->
+    {# The feedback wording is written three times and has no shared source. Change it in
+       all three places together:
+         - GoldenDict: exporter/goldendict/javascript/feedback_template.js
+         - app: lib/widgets/feedback_section.dart in the dpd-flutter-app repo
+       "Get updated" exists only in GoldenDict, on purpose. #}
 
     <div id="feedback_{{d.i.lemma_1_}}" class="dpd content hidden">
         <p>ID <b>{{d.i.id}}</b></p>
+        <p>Permalink <a class="dpd-link" href="{{d.permalink}}"
+                target="_blank">{{d.permalink}}</a>
+        </p>
         <p>
             Digital Pāḷi Dictionary is a work in progress, made available
             for
@@ -1606,9 +1614,7 @@
                 Correct a mistake
             </a>
             <span>
-                . Did you spot a mistake in the dictionary? Have something
-                to
-                add?
+                . Did you spot a mistake in the dictionary?
                 Please report it. It generally takes less than a minute and
                 your
                 corrections and suggestions help to improve the quality of
@@ -1627,14 +1633,23 @@
             </span>
         </p>
         <p>
-            <a class="dpd-link"
-                href="mailto:digitalpalidictionary@gmail.com?subject=I%20want%20to%20help!&body=Please%20let%20me%20know%20how%20I%20can%20get%20involved%20with%20the%20development%20of%20DPD.">
-                Get involved
+            <a class="dpd-link" href="https://digitalpalidictionary.github.io/how_to_cite/" target="_blank">
+                How to cite
             </a>
             <span>
-                . If you're a Pāḷi specialist or a coder, or would like to
-                contribute to
-                the project in any way, please get in touch.
+                . DPD is revised every month, so please cite the version
+                you used.
+            </span>
+        </p>
+        <p>
+            <a class="dpd-link"
+                href="https://digitalpalidictionary.github.io/contributing/#offer-your-help"
+                target="_blank">
+                Contribute to DPD
+            </a>
+            <span>
+                . Contribute your time, skills or resources to the project.
+                Please use the form.
             </span>
         </p>
         <p>

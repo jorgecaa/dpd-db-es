@@ -8,6 +8,7 @@ from gui2.pass2_exceptions import Pass2ExceptionsFileManager
 from gui2.pass2_pre_new_word_manager import Pass2NewWordManager
 from gui2.toolkit import ToolKit
 from tools.cst_source.models import CstSourceSuttaExample
+from gui2.ui_utils import field_border
 
 LABEL_COLOUR = ft.Colors.GREY_500
 HIGHLIGHT_COLOUR = ft.Colors.BLUE_200
@@ -27,7 +28,6 @@ class Pass2PreProcessView(ft.Column):
             controls=[],
             spacing=0,
         )
-        self.page: ft.Page = page
         self.toolkit: ToolKit = toolkit
         self.controller = Pass2PreController(
             self,
@@ -54,7 +54,7 @@ class Pass2PreProcessView(ft.Column):
             "",
             expand=True,
             color=ft.Colors.BLUE_200,
-            border_radius=20,
+            border=field_border(),
             read_only=True,
         )
         self.book_options = [
@@ -67,8 +67,7 @@ class Pass2PreProcessView(ft.Column):
             options=self.book_options,
             width=300,
             text_size=14,
-            border_color=HIGHLIGHT_COLOUR,
-            border_radius=20,
+            border=field_border(color=HIGHLIGHT_COLOUR),
         )
         self.preprocessed_count_field = ft.TextField(
             "",
@@ -76,7 +75,7 @@ class Pass2PreProcessView(ft.Column):
             label_style=TEXT_FIELD_LABEL_STYLE,
             width=400,
             color=HIGHLIGHT_COLOUR,
-            border_radius=20,
+            border=field_border(),
             expand=True,
             read_only=True,
         )
@@ -92,7 +91,7 @@ class Pass2PreProcessView(ft.Column):
             label="Word in text",
             label_style=TEXT_FIELD_LABEL_STYLE,
             color=HIGHLIGHT_COLOUR,
-            border_radius=20,
+            border=field_border(),
         )
         self.headword_lemma_1_field = ft.TextField(
             "",
@@ -100,7 +99,7 @@ class Pass2PreProcessView(ft.Column):
             label="Headword",
             label_style=TEXT_FIELD_LABEL_STYLE,
             color=HIGHLIGHT_COLOUR,
-            border_radius=20,
+            border=field_border(),
             expand=True,
         )
         self.headword_pos_field = ft.TextField(
@@ -109,7 +108,7 @@ class Pass2PreProcessView(ft.Column):
             label="POS",
             label_style=TEXT_FIELD_LABEL_STYLE,
             color=HIGHLIGHT_COLOUR,
-            border_radius=20,
+            border=field_border(),
         )
         self.headword_meaning_field = ft.TextField(
             "",
@@ -117,13 +116,13 @@ class Pass2PreProcessView(ft.Column):
             label="Meaning",
             label_style=TEXT_FIELD_LABEL_STYLE,
             color=HIGHLIGHT_COLOUR,
-            border_radius=20,
+            border=field_border(),
         )
 
         self.exceptions_field = ft.TextField(
             "",
             on_submit=self.add_exception,
-            border_radius=20,
+            border=field_border(),
             width=300,
             expand=True,
             label="check meaning_1 before adding exceptions!",
@@ -134,6 +133,11 @@ class Pass2PreProcessView(ft.Column):
             value=True,
             on_change=self.handle_exceptions_toggle,
         )
+        self.eng_switch = ft.Switch(
+            label="eng",
+            value=False,
+            on_change=self.handle_eng_toggle,
+        )
         self.in_comps_switch = ft.Switch(
             label="in comps",
             value=False,
@@ -142,7 +146,7 @@ class Pass2PreProcessView(ft.Column):
             "",
             width=60,
             color=HIGHLIGHT_COLOUR,
-            border_radius=20,
+            border=field_border(),
             read_only=True,
             text_align=ft.TextAlign.RIGHT,
         )
@@ -151,7 +155,7 @@ class Pass2PreProcessView(ft.Column):
             ft.Row(
                 controls=[
                     self.books_dropdown,
-                    ft.ElevatedButton(
+                    ft.Button(
                         "PreProcess Book",
                         on_click=self.handle_book_click,
                     ),
@@ -182,24 +186,25 @@ class Pass2PreProcessView(ft.Column):
             ft.Divider(),
             ft.Row(
                 controls=[
-                    ft.ElevatedButton(
+                    ft.Button(
                         "Yes",
                         on_click=self.handle_yes_click,
                     ),
-                    ft.ElevatedButton(
+                    ft.Button(
                         "No",
                         on_click=self.handle_no_click,
                     ),
-                    ft.ElevatedButton(
+                    ft.Button(
                         "New",
                         on_click=self.handle_new_click,
                     ),
-                    ft.ElevatedButton(
+                    ft.Button(
                         "Pass",
                         on_click=self.handle_pass_click,
                     ),
                     self.exceptions_field,
                     self.exceptions_switch,
+                    self.eng_switch,
                 ],
             ),
             ft.Row(
@@ -273,6 +278,9 @@ class Pass2PreProcessView(ft.Column):
         headword = self.controller.current_headword()
         if headword is None:
             return
+        if not self._selection_is_visible():
+            self.update_message("no example selected")
+            return
         headword_id = headword.id
         sentence: SuttaCentralSegment | CstSourceSuttaExample | None = None
 
@@ -311,6 +319,9 @@ class Pass2PreProcessView(ft.Column):
         self.controller.load_next_headword()
 
     def handle_new_click(self, e):
+        if not self._selection_is_visible():
+            self.update_message("no example selected")
+            return
         sentence: SuttaCentralSegment | CstSourceSuttaExample | None = None
         if (
             sentences := self.controller.missing_examples_dict.get(
@@ -331,10 +342,11 @@ class Pass2PreProcessView(ft.Column):
                 sentence,
                 comment=comment_val,
             )
-            self.selected_sentence_index = 0
             self.update_message(message)
 
-        comment_input = ft.TextField(expand=True, autofocus=True, on_submit=on_ok)
+        comment_input = ft.TextField(
+            expand=True, autofocus=True, on_submit=on_ok, border=field_border()
+        )
 
         self.new_word_dialog = ft.AlertDialog(
             modal=True,
@@ -351,17 +363,17 @@ class Pass2PreProcessView(ft.Column):
                     ),
                     ft.Row([comment_input]),
                 ],
-                expand=True,
-                scroll=ft.ScrollMode.AUTO,
+                tight=True,
+                width=500,
             ),
-            alignment=ft.alignment.center,
-            title_padding=ft.padding.all(25),
+            alignment=ft.Alignment.CENTER,
+            title_padding=ft.Padding.all(25),
             actions=[
                 ft.TextButton("OK", on_click=on_ok),
             ],
         )
 
-        self.page.open(self.new_word_dialog)
+        self.page.show_dialog(self.new_word_dialog)
         self.page.update()
 
     def make_examples_list(
@@ -410,6 +422,9 @@ class Pass2PreProcessView(ft.Column):
                     text = f"{example.pali} {example.english}".lower()
                 elif isinstance(example, CstSourceSuttaExample):
                     text = f"{example.example} {example.source} {example.sutta}".lower()
+                    if self.eng_switch.value:
+                        english = self.controller.english_for(example.example)
+                        text = f"{text} {english.lower()}"
                 else:
                     text = ""
                 if self.search_query in text:
@@ -430,7 +445,11 @@ class Pass2PreProcessView(ft.Column):
                 source = example.source
                 sutta = example.sutta
                 pali = example.example
-                english = ""
+                english = (
+                    self.controller.english_for(example.example)
+                    if self.eng_switch.value
+                    else ""
+                )
 
             pali_normalized = pali.lower().replace("ṁ", "ṃ")
             example_controls.append(
@@ -467,7 +486,7 @@ class Pass2PreProcessView(ft.Column):
                                 expand=True,
                                 selectable=True,
                             ),
-                            padding=ft.padding.only(left=10),
+                            padding=ft.Padding.only(left=10),
                         ),
                         ft.Container(
                             content=ft.Text(
@@ -478,7 +497,7 @@ class Pass2PreProcessView(ft.Column):
                                 color=ft.Colors.GREY_500,
                                 selectable=True,
                             ),
-                            padding=ft.padding.only(left=10),
+                            padding=ft.Padding.only(left=10),
                         ),
                         ft.Divider(),
                     ],
@@ -501,7 +520,12 @@ class Pass2PreProcessView(ft.Column):
                 buttons.append(ft.TextButton("Less", on_click=self._handle_less_click))
             example_controls.append(ft.Row(controls=buttons))
 
+        visible_counters = [counter for counter, _ in visible]
+        if visible_counters and self.selected_sentence_index not in visible_counters:
+            self.selected_sentence_index = visible_counters[0]
+
         radio_group = ft.RadioGroup(
+            value=str(self.selected_sentence_index) if visible_counters else None,
             content=ft.Column(
                 controls=example_controls,
                 spacing=10,
@@ -511,6 +535,15 @@ class Pass2PreProcessView(ft.Column):
             on_change=self.handle_example_selection_change,
         )
         return radio_group
+
+    def _selection_is_visible(self) -> bool:
+        """Whether the selected example is on screen, so Yes and New never
+        save one a search or filter has hidden."""
+
+        return any(
+            counter == self.selected_sentence_index
+            for counter, _ in self.filtered_examples[: self.examples_shown]
+        )
 
     def _handle_more_click(self, e) -> None:
         self.examples_shown += self.examples_page_size
@@ -537,6 +570,16 @@ class Pass2PreProcessView(ft.Column):
 
     def handle_exceptions_toggle(self, e: ft.ControlEvent) -> None:
         """Toggle exception filtering on/off and refresh the examples list."""
+
+        if not self.examples_list:
+            return
+        self._filter_examples()
+        self.update_examples_count(len(self.filtered_examples))
+        self.update_examples(self._build_examples_radio_group())
+
+    def handle_eng_toggle(self, e: ft.ControlEvent) -> None:
+        """Show or hide the English under each CST example. Re-filters,
+        because the search also matches the English while it is shown."""
 
         if not self.examples_list:
             return

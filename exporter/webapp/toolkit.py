@@ -145,13 +145,18 @@ def lookup_rows(
     if rows:
         return rows
 
+    # LIKE is only for case-insensitivity: escape % and _ so a query like "%"
+    # matches itself, not every row
+    q_like = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     matched_keys = [
         key
         for (key,) in db_session.query(Lookup.lookup_key)
         .filter(
             or_(
-                func.lower(Lookup.lookup_key).like(func.lower(q)),
-                func.lower(Lookup.lookup_key).like(func.lower(q + ".")),
+                func.lower(Lookup.lookup_key).like(func.lower(q_like), escape="\\"),
+                func.lower(Lookup.lookup_key).like(
+                    func.lower(q_like + "."), escape="\\"
+                ),
             )
         )
         .all()
@@ -166,6 +171,42 @@ def lookup_rows(
         .order_by(text("lookup.rowid"))
         .all()
     )
+
+
+LICENSE_URL: str = "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+LICENSE_NAME: str = "CC BY-NC-SA 4.0"
+LICENSE_HOLDER: str = "Bodhirasa Bhikkhu"
+LICENSE_ATTRIBUTION: str = f"Digital Pāḷi Dictionary by {LICENSE_HOLDER} {LICENSE_NAME}"
+
+# Official Creative Commons press-kit marks, recoloured to inherit the surrounding
+# text colour so they read in both light and dark mode. Inlined rather than linked
+# so the notice survives offline in GoldenDict.
+_CC_ICONS: str = ProjectPaths().webapp_cc_icons_path.read_text(encoding="utf-8").strip()
+
+# Appended to the rendered entries rather than to a page footer, so the notice
+# travels with the data into GoldenDict, the JSON body and third-party embeds.
+LICENSE_HTML: str = (
+    '<div class="license-line">'
+    f'<a href="{LICENSE_URL}" target="_blank" rel="license">'
+    f'<span class="license-icons">{_CC_ICONS}</span>'
+    f"Digital Pāḷi Dictionary {LICENSE_NAME}"
+    "</a>"
+    "</div>"
+)
+
+# Attached only to routes returning DPD dictionary data, so that the licence and
+# attribution travel with the data itself. Tipitaka translations and audio are
+# licensed separately and must not carry these.
+LICENSE_LINK_HEADER: dict[str, str] = {
+    "Link": f'<{LICENSE_URL}>; rel="license"; title="{LICENSE_NAME}"'
+}
+
+LICENSE_NOTICE: dict[str, str] = {
+    "name": LICENSE_NAME,
+    "url": LICENSE_URL,
+    "attribution": LICENSE_ATTRIBUTION,
+    "note": "Non-commercial use only. Derivatives must be shared alike.",
+}
 
 
 def make_dpd_html(
@@ -185,6 +226,9 @@ def make_dpd_html(
                 with db_session.no_autoflush:
                     dpd_html = ""
                     summary_html = ""
+                    # Set when the query fell through to suggestions, so the licence
+                    # is not stamped on a "no results" page.
+                    only_suggestions = False
                     q = q.replace("'", "").replace("ṁ", "ṃ").strip()
 
                     lookup_results = lookup_rows(
@@ -203,7 +247,9 @@ def make_dpd_html(
                         ).render(d=d)
 
                     # first try the lookup table, if no results, then try other options
-                    if lookup_results:
+                    # a bare number is always a permalink to a headword id, so it
+                    # skips the lookup table, where "3" is an abbreviation
+                    if lookup_results and not q.isdecimal():
                         for lookup_result in lookup_results:
                             # headwords
                             if lookup_result.headwords:
@@ -344,13 +390,17 @@ def make_dpd_html(
                                 ).render(d=d)
 
                     # the two cases below search directly in the DpdHeadwords table
-                    elif q.isnumeric():  # eg 78654
-                        search_term = int(q)
+                    # isdecimal, not isnumeric: "½" and "²" are numeric but int() rejects them
+                    elif q.isdecimal():  # eg 78654
+                        # 18 digits always fit SQLite's integer; a longer number
+                        # is never an id, and would overflow the query
                         headword_result = (
                             db_session.query(DpdHeadword)
                             .options(*_DEFER_HEADWORD)
-                            .filter(DpdHeadword.id == search_term)
+                            .filter(DpdHeadword.id == int(q))
                             .first()
+                            if len(q) <= 18
+                            else None
                         )
                         if headword_result:
                             fc = get_family_compounds(headword_result)
@@ -366,6 +416,7 @@ def make_dpd_html(
                             dpd_html = find_closest_matches(
                                 q, headwords_clean_set, ascii_to_unicode_dict
                             )
+                            only_suggestions = True
 
                     elif re.search(r"\s\d", q):  # eg "kata 5"
                         headword_result = (
@@ -388,12 +439,17 @@ def make_dpd_html(
                             dpd_html = find_closest_matches(
                                 q, headwords_clean_set, ascii_to_unicode_dict
                             )
+                            only_suggestions = True
 
                     # or finally return closest matches
                     else:
                         dpd_html = find_closest_matches(
                             q, headwords_clean_set, ascii_to_unicode_dict
                         )
+                        only_suggestions = True
+
+                    if dpd_html and not only_suggestions:
+                        dpd_html += LICENSE_HTML
 
                     return dpd_html, summary_html
 
@@ -412,7 +468,8 @@ def find_closest_matches(
     headwords_clean_set,
     ascii_to_unicode_dict,
 ) -> str:
-    ascii_matches = ascii_to_unicode_dict[q]
+    # .get, not [q]: indexing a defaultdict would store an entry per distinct miss
+    ascii_matches = ascii_to_unicode_dict.get(q, [])
     closest_headword_matches = difflib.get_close_matches(
         q, headwords_clean_set, n=10, cutoff=0.7
     )

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import gui2.database_manager as database_manager_module
-from db.models import Base, DpdHeadword
+from db.models import Base, DpdHeadword, Lookup
 from gui2.database_manager import DatabaseManager
 
 
@@ -148,9 +148,9 @@ def test_is_db_loaded_true_after_flag_set(db_manager: DatabaseManager):
 def test_initialize_db_sets_db_loaded(
     db_manager: DatabaseManager, monkeypatch: pytest.MonkeyPatch
 ):
-    """initialize_db() must flip db_loaded True after the corpus load so save
-    paths stop being gated. Stub the file-backed get_all_* helpers; the corpus
-    load runs against the in-memory fixture."""
+    """initialize_db() must flip db_loaded True once the lookup sets and the
+    decon cache are ready — no corpus load or detector build happens there
+    any more. Stub the file-backed get_all_* helpers."""
     for name in (
         "get_all_lemma_1_and_lemma_clean",
         "get_all_pos",
@@ -162,13 +162,32 @@ def test_initialize_db_sets_db_loaded(
         "get_all_decon_no_headwords",
     ):
         monkeypatch.setattr(db_manager, name, lambda: None)
-    monkeypatch.setattr(
-        database_manager_module, "RelationshipDetector", lambda corpus: object()
-    )
 
     assert db_manager.is_db_loaded() is False
     db_manager.initialize_db()
     assert db_manager.is_db_loaded() is True
+
+
+def test_initialize_db_does_not_build_detector(
+    db_manager: DatabaseManager, monkeypatch: pytest.MonkeyPatch
+):
+    """initialize_db() must leave the detector unbuilt — it is lazy now, and
+    the corpus load it would trigger must stay off the db-loaded path."""
+    for name in (
+        "get_all_lemma_1_and_lemma_clean",
+        "get_all_pos",
+        "get_all_roots",
+        "get_all_root_families",
+        "get_all_compound_families",
+        "get_all_word_families",
+        "get_all_patterns",
+        "get_all_decon_no_headwords",
+    ):
+        monkeypatch.setattr(db_manager, name, lambda: None)
+
+    db_manager.initialize_db()
+    assert getattr(db_manager, "_relationship_detector", None) is None
+    assert getattr(db_manager, "db", None) is None
 
 
 # ── derived sets ─────────────────────────────────────────────────────────────
@@ -191,6 +210,37 @@ def test_make_pass2_lists_derives_from_corpus(db_manager: DatabaseManager):
     # dhamma: early sutta source → not missing
     assert "dhamma" not in db_manager.all_inflections_missing_example
     assert db_manager.all_suffixes == {"ta", "a"}
+    # the commentary-book rule agrees on all three
+    assert {"kata", "gata"} <= db_manager.all_inflections_missing_any_example
+    assert "dhamma" not in db_manager.all_inflections_missing_any_example
+
+
+def test_commentary_book_counts_late_example_as_done(
+    db_manager: DatabaseManager, engine_and_session: tuple[Engine, Session]
+):
+    _, session = engine_and_session
+    session.add(
+        DpdHeadword(
+            id=4,
+            lemma_1="vutta 1",
+            pos="pp",
+            meaning_1="said",
+            source_1="DNa1",
+            example_1="vuttaṁ hetaṁ",
+            inflections="vutta",
+        )
+    )
+    lookup = Lookup(lookup_key="vutta")
+    lookup.headwords_pack([4])
+    session.add(lookup)
+    session.commit()
+    db_manager.mark_corpus_stale()
+
+    db_manager.make_pass2_lists()
+    assert "vutta" in db_manager.all_inflections_missing_example
+    assert "vutta" not in db_manager.all_inflections_missing_any_example
+    assert [h.id for h in db_manager.get_headwords("vutta")] == [4]
+    assert db_manager.get_headwords("vutta", commentary_book=True) == []
 
 
 def test_derived_sets_share_one_corpus_load(

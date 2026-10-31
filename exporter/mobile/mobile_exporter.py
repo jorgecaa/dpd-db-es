@@ -781,7 +781,7 @@ def export_other_dictionaries(
     pr.yes(len(batch))
 
     # --- Nyanatiloka's Buddhist Dictionary ---
-    pr.green_tmr("exporting Nyanatiloka's Buddhist Dictionary")
+    pr.green_tmr("exporting Nyanatiloka")
 
     if not g.pth.nyanatiloka_source_path.exists():
         raise _missing_source_error("Nyanatiloka", g.pth.nyanatiloka_source_path)
@@ -815,6 +815,45 @@ def export_other_dictionaries(
             "Buddhist Dictionary: Manual of Buddhist Terms and Doctrines",
             "Nyanatiloka Mahathera, ed. Nyanaponika Mahathera",
             nyanatiloka_css,
+            len(batch),
+        ),
+    )
+
+    pr.yes(len(batch))
+
+    # --- PTS (Pali Text Society Pāli-English Dictionary) ---
+    pr.green_tmr("exporting PTS")
+
+    if not g.pth.pts_source_path.exists():
+        raise _missing_source_error("PTS", g.pth.pts_source_path)
+
+    with g.pth.pts_source_path.open(encoding="utf-8") as f:
+        pts_data: list[dict[str, str]] = json.load(f)
+
+    pts_css = ""
+    if g.pth.pts_css_path.exists():
+        pts_css = _sanitize_css(g.pth.pts_css_path.read_text(encoding="utf-8"))
+
+    batch = []
+    for entry in pts_data:
+        word = entry["word"]
+        word_fuzzy = _strip_diacritics_mobile(word)
+        batch.append(("pts", word, word_fuzzy, entry["definition_html"], ""))
+
+    dest.executemany(
+        "INSERT INTO dict_entries (dict_id, word, word_fuzzy, definition_html, definition_plain)"
+        " VALUES (?, ?, ?, ?, ?)",
+        batch,
+    )
+
+    dest.execute(
+        "INSERT INTO dict_meta (dict_id, name, author, css, entry_count)"
+        " VALUES (?, ?, ?, ?, ?)",
+        (
+            "pts",
+            "PTS Pāḷi-English Dictionary",
+            "T. W. Rhys Davids & William Stede",
+            pts_css,
             len(batch),
         ),
     )
