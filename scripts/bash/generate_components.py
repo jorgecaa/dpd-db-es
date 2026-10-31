@@ -50,9 +50,6 @@ COMMANDS: list[str] = [
     "db/lookup/transliterate_lookup_table.py",
     "db/lookup/help_abbrev_add_to_lookup.py",
     #
-    # after lookup.grammar: writes the dictionary's grammar_by_word_json.js
-    "scripts/build/grammar_to_json.py",
-    #
     "scripts/build/ebt_counter.py",
     #
     "go run go_modules/frequency/main.go",

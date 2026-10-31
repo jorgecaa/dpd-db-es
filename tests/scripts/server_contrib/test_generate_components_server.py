@@ -6,7 +6,6 @@ DROPPED = [
     "uv run pytest",
     "config_uposatha_day",
     "families_to_json",
-    "grammar_to_json",
     "anki_updater",
     "anki_apkg_exporter",
     "db/variants/main.py",

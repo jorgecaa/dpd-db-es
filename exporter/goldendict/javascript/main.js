@@ -38,19 +38,12 @@ function button_click(el) {
 
 document.addEventListener("DOMContentLoaded", function () {
   loadData();
-  const gdWord = searchedWord();
-  if (gdWord) {
-    highlightInflections(gdWord);
-  }
-});
-
-//// the word the user looked up, as passed by the dictionary app
-
-function searchedWord() {
   const gdParams = new URLSearchParams(window.location.search);
   const gdWord = gdParams.get("word");
-  return gdWord ? gdWord.trim() : "";
-}
+  if (gdWord) {
+    highlightInflections(gdWord.trim());
+  }
+});
 
 function loadData() {
   var metaTags = document.querySelectorAll("meta[data_key]");
@@ -147,23 +140,6 @@ function loadButtonContent(data) {
       `family_word_${lemmaTag}`
     );
     familyWordElement.innerHTML = familyWordHtml;
-  }
-
-  //// grammar by word
-
-  if (typeof grammar_by_word_json !== "undefined") {
-    const grammarElement = document.getElementById(`grammar_${lemmaTag}`);
-    // the searched form first — it is the form whose grammar the user wants —
-    // and the headword's own form as a fallback when the app passes no ?word=
-    const form = [searchedWord(), data.lemma_clean].find(
-      (candidate) => candidate && grammar_by_word_json[candidate]
-    );
-    if (grammarElement && form) {
-      grammarElement.insertAdjacentHTML(
-        "beforeend",
-        makeGrammarByWordHtml(form, grammarByWordRows(form))
-      );
-    }
   }
 }
 

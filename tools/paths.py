@@ -215,12 +215,6 @@ class ProjectPaths:
         self.frequency_template_js = (
             base_dir / "exporter/goldendict/javascript/frequency_template.js"
         )
-        self.grammar_by_word_json = (
-            base_dir / "exporter/goldendict/javascript/grammar_by_word_json.js"
-        )
-        self.grammar_by_word_template_js = (
-            base_dir / "exporter/goldendict/javascript/grammar_by_word_template.js"
-        )
         self.main_js_path = base_dir / "exporter/goldendict/javascript/main.js"
         self.sorter_js_path = base_dir / "exporter/goldendict/javascript/sorter.js"
 
@@ -677,9 +671,6 @@ class ProjectPaths:
         # shared_data
         self.changed_headwords_path = base_dir / "shared_data/changed_headwords"
         self.corrections_tsv_path = base_dir / "shared_data/corrections.tsv"
-        self.grammar_by_word_json_path = (
-            base_dir / "shared_data/grammar/grammar_by_word.json"
-        )
         self.headword_stem_pattern_dict_path = (
             base_dir / "shared_data/headword_stem_pattern_dict"
         )
