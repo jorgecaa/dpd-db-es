@@ -4,12 +4,7 @@ Where are all the parts of the project located?
 ## Tree
 .
 ├── archive
-├── audio
-├── c_modules
-│   └── goldendict
-├── conductor
 ├── db
-│   ├── app
 │   ├── backup_tsv
 │   ├── bold_definitions
 │   ├── epd
@@ -24,8 +19,6 @@ Where are all the parts of the project located?
 │   └── single
 ├── docs
 ├── exporter
-│   ├── analysis
-│   ├── anki
 │   ├── apple_dictionary
 │   ├── deconstructor
 │   ├── goldendict
@@ -37,9 +30,7 @@ Where are all the parts of the project located?
 │   ├── share
 │   ├── sutta_central
 │   ├── tbw
-│   ├── tester
 │   ├── tpr
-│   ├── txt
 │   ├── variants
 │   ├── webapp
 │   └── wxt_extension
@@ -47,17 +38,8 @@ Where are all the parts of the project located?
 │   ├── deconstructor
 │   ├── dpdDb
 │   ├── frequency
-│   ├── test
 │   ├── tools
 ├── gui2
-├── identity
-│   ├── css
-│   ├── fonts
-│   └── logo
-├── kamma
-│   ├── archive
-│   └── threads
-├── misc
 ├── newsletter
 ├── resources
 ├── scripts
@@ -94,23 +76,13 @@ There are four main parts to the code:
 
 ## Folder details
 
-- **archive/** Retired code kept for reference only, e.g. the MCP server (`archive/exporter/mcp/`, archived 2026-09-27). Excluded from linting and type checking.
-
-- **audio/** Text-to-speech audio generation and release.
-
-- **c_modules/** When even Go is not close enough to the metal — a C pilot of the GoldenDict
-  exporter (`goldendict/`, with a Rust minifier in `goldendict/minificador/`). Built with
-  `make`, run from the project root. See its `README.md`.
-
-- **conductor/** Product and tech-stack specs — `product.md` (vision, features, audience, release schedule) and `tech-stack.md` (full technology stack and key libraries).
+- **archive/** Retired code kept for reference, e.g. the MCP server (`archive/exporter/mcp/`, archived 2026-09-27).
 
 - **db/** All code related to building and populating the various tables and columns of the database.
 
     - **models.py** SQLAlchemy model of the database.
 
     - **db_helpers.py** Helper functions to make create the database, get a session, get column names, etc.
-
-    - **app/** Standalone script (not wired into any `just` recipe or the build pipeline) that copies `dpd_headwords` and `lookup` into a slim SQLite file for the external `dpd-app` project.
 
     - **backup_tsv/** TSV backups of the database source tables
 
@@ -144,10 +116,6 @@ There are four main parts to the code:
 
 - **exporter/** Export the DPD database into various formats.
 
-	- **analysis/** Analyse a Pāḷi passage word by word against the db (lookup + headwords), with optional AI translation, and export the results to CSV.
-
-	- **anki/** Push DPD data into Anki decks — update notes directly in a live collection and export a standalone `.apkg`.
-
 	- **apple_dictionary/** Export DPD for Apple Dictionary.
 
 	- **deconstructor/** Export DPD Deconstructor to GoldenDict and MDict
@@ -166,17 +134,11 @@ There are four main parts to the code:
 
 	- **pdf/** Export DPD to PDF format.
 
-	- **share/** Output directory, not code — every exporter writes its finished dictionaries, zips and tarballs here (see `share_dir` in `tools/paths.py`).
-
 	- **sutta_central/** Export DPD data for SuttaCentral integration.
 
 	- **tbw/** Export a light version of DPD for integration into [The Buddha's Words website](https://thebuddhaswords.net/mn/mn1.html){target="_blank"}.
 
-	- **tester/** Sandbox for rapid prototyping — builds a one-entry dummy dictionary so layout, component and CSS changes can be checked without a full rebuild. See its `README.md`.
-
 	- **tpr/** Export DPD grammar deconstructor data for integration into Tipitaka Pali Reader app
-
-	- **txt/** Export the whole dictionary as plain text — for screen readers, grep/sed analysis and long-term archival. See its `README.md`.
 
 	- **variants/** Export variant readings data.
 
@@ -192,17 +154,9 @@ There are four main parts to the code:
 
 	- **frequency/** Generate frequency tables and data lists for every word
 
-	- **test/** Scratch `main` package for exercising the Go helpers in `tools/`.
-
 	- **tools/** GO packages used across the project
 
 - **gui2/** A GUI for data capture and running database tests
-
-- **identity/** Single source of truth for project styling and branding (css, fonts, logo). `just css` propagates the css to the webapp, exporters and docs — don't edit the copies.
-
-- **kamma/** The project's work-thread system. `workflow.md` describes the task flow, `project.md` and `tech.md` hold the running project notes, `lessons.md` accumulates what went wrong, and one folder per thread lives in `threads/` (completed ones move to `archive/`).
-
-- **misc/** Assorted reference material and one-off data files, not used by any build step.
 
 - **newsletter/** The monthly newsletter: one folder per month (`<YYYY-MM>/newsletter.md` + `pics/`), the shared footer, and the builder behind `just newsletter-new`, `newsletter-preview` and `newsletter-publish`.
 
