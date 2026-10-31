@@ -19,6 +19,10 @@ initial_build_db:
 generate_components:
     uv run python scripts/bash/generate_components.py
 
+# Build the serving-only database: dpd.db without the columns the webapp never reads
+serving-db:
+    uv run python scripts/build/build_serving_db.py --source dpd.db --dest dpd-serve.db
+
 # Run makedict in a pty (keeps ANSI colours) and save an HTML log; no transcript artifact
 _logged-makedict:
     #!/usr/bin/env bash
