@@ -31,6 +31,7 @@ from tools.utils import (
     RenderedSizes,
     default_rendered_sizes,
     extract_body,
+    list_into_batches,
     squash_whitespaces,
     sum_rendered_sizes,
 )
@@ -226,20 +227,6 @@ def _lookup_family_set(
     return [fs_map[k] for k in _dedupe_keys(pw.family_set_list) if k in fs_map]
 
 
-def _batches_of_size(
-    items: list[DpdHeadwordDbParts], size: int
-) -> list[list[DpdHeadwordDbParts]]:
-    """Split into batches of a fixed ``size``.
-
-    Deliberately not ``list_into_batches``, which takes a batch *count*: with a
-    fixed count the batch size is the dataset size divided by the core count,
-    so every worker's peak memory grows with the dictionary and has no ceiling.
-    Fixing the size instead bounds a worker's memory to ``size`` headwords no
-    matter how large the dictionary becomes.
-    """
-    return [items[i : i + size] for i in range(0, len(items), size)]
-
-
 def _base_dpd_query(db_session: Session):
     """The joined DpdHeadword/FamilyRoot/FamilyWord query, without order or limit."""
     return (
@@ -254,39 +241,44 @@ def _base_dpd_query(db_session: Session):
 def _iter_dpd_row_pages(
     db_session: Session,
     data_limit: int,
+    low_mem: bool,
     page_size: int,
 ) -> Iterator[list[DpdHeadwordDbRowItems]]:
     """Yield pages of (DpdHeadword, FamilyRoot, FamilyWord) row tuples.
 
-    Keyset pages ordered by ``lemma_1``, which is unique and carries the
-    table's implicit unique index, so it is a stable paging key and no
-    per-offset re-sort is needed. At most ``page_size`` rows are resident at
-    once, and the entry order is identical to the old single-page default.
-
-    The session is expunged after each page is consumed: without that the
-    identity map keeps every loaded row alive for the whole run and paging
-    frees nothing. Expunging is safe here because the caller finishes with a
-    page (including its lazy-loaded ``rt``/``su`` relationships) before asking
-    for the next one.
+    Default (high-mem): a single page containing every row, ordered by
+    ``lemma_1`` — one query instead of the old per-offset re-sort.
+    Low-mem: keyset pages ordered by ``id`` (rowid), so at most ``page_size``
+    rows are resident at once. Entry order differs in this mode, which is safe:
+    the StarDict writer sorts on output and the parity check normalises order.
     """
+    if not low_mem:
+        query = _base_dpd_query(db_session).order_by(DpdHeadword.lemma_1)
+        if data_limit:
+            query = query.limit(data_limit)
+        yield [row._tuple() for row in query.all()]
+        return
+
     fetched = 0
-    last_lemma: str | None = None
+    last_id = 0
     while True:
         remaining = page_size
         if data_limit:
             remaining = min(page_size, data_limit - fetched)
             if remaining <= 0:
                 return
-        query = _base_dpd_query(db_session).order_by(DpdHeadword.lemma_1)
-        if last_lemma is not None:
-            query = query.filter(DpdHeadword.lemma_1 > last_lemma)
-        rows = query.limit(remaining).all()
+        rows = (
+            _base_dpd_query(db_session)
+            .filter(DpdHeadword.id > last_id)
+            .order_by(DpdHeadword.id)
+            .limit(remaining)
+            .all()
+        )
         if not rows:
             return
-        last_lemma = rows[-1][0].lemma_1
+        last_id = rows[-1][0].id
         fetched += len(rows)
         yield [row._tuple() for row in rows]
-        db_session.expunge_all()
 
 
 def generate_dpd_html(
@@ -307,15 +299,10 @@ def generate_dpd_html(
     if data_limit != 0:
         pali_words_count = data_limit
 
-    # Both bounds are absolute, not a fraction of the dataset: the parent holds
-    # at most one page of rows, and a worker at most one batch. Peak memory is
-    # therefore flat in the size of the dictionary. A small machine gets the
-    # tighter pair, but neither setting is unbounded.
     low_mem_threshold = 9 * 1024 * 1024 * 1024
     mem = psutil.virtual_memory()
     low_mem = mem.total < low_mem_threshold
     page_size = 2000 if low_mem else 5000
-    batch_size = 125 if low_mem else 250
 
     num_logical_cores = psutil.cpu_count()
     if num_logical_cores is None:
@@ -356,11 +343,10 @@ def generate_dpd_html(
     rendered_sizes: list[RenderedSizes] = []
 
     # One persistent worker pool builds the jinja env + render data once each,
-    # then renders every page's batches. A page is a bounded keyset slice and a
-    # batch a fixed number of headwords, so neither the parent's nor a worker's
-    # working set scales with the dictionary. Batches stay well finer than the
-    # page so completions stream in and drive the progress counter live rather
-    # than arriving in one burst at the end.
+    # then renders every page's batches. In default (high-mem) mode there is a
+    # single page of all rows; in low-mem mode a page is a bounded keyset slice.
+    # Batches are finer than the core count so completions stream in and drive
+    # the progress counter live rather than arriving in one burst at the end.
     report_every = 5000
     processed = 0
     reported = 0
@@ -369,11 +355,13 @@ def generate_dpd_html(
         initializer=_worker_init,
         initargs=(render_data, pth),
     ) as pool:
-        for page_rows in _iter_dpd_row_pages(db_session, data_limit, page_size):
+        for page_rows in _iter_dpd_row_pages(
+            db_session, data_limit, low_mem, page_size
+        ):
             dpd_db_data = [_add_parts(row) for row in page_rows]
 
-            batches: list[list[DpdHeadwordDbParts]] = _batches_of_size(
-                dpd_db_data, batch_size
+            batches: list[list[DpdHeadwordDbParts]] = list_into_batches(
+                dpd_db_data, num_logical_cores * 4
             )
             futures = {
                 pool.submit(_render_batch, batch): len(batch) for batch in batches
