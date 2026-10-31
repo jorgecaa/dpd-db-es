@@ -7,6 +7,7 @@ from pathlib import Path
 from sqlalchemy import func, literal, or_, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, defer
+from unidecode import unidecode
 
 from db.db_helpers import get_db_session
 from db.models import DpdHeadword, DpdRoot, FamilyRoot, Lookup
@@ -29,6 +30,8 @@ from tools.exporter_functions import (
     get_family_idioms,
     get_family_set,
 )
+from tools.configger import config_test
+from tools.pali_context import PaliContextIndex
 from tools.pali_sort_key import pali_sort_key
 from tools.paths import ProjectPaths
 from tools.variants_manager import VariantManager
@@ -57,6 +60,21 @@ _DEFER_HEADWORD = tuple(
     defer(getattr(DpdHeadword, name)) for name in _UNREAD_HEADWORD_COLUMNS
 )
 _DEFER_LOOKUP = tuple(defer(getattr(Lookup, name)) for name in _UNREAD_LOOKUP_COLUMNS)
+
+
+_context_index: PaliContextIndex | None = None
+
+
+def get_context_index() -> PaliContextIndex:
+    """The attested-neighbour index, loaded once per process on the first miss.
+
+    Costs ~0.1 s and ~15 MB, and only when a search actually fails: a session that only
+    looks up words the dictionary has never pays it.
+    """
+    global _context_index
+    if _context_index is None:
+        _context_index = PaliContextIndex()
+    return _context_index
 
 
 def get_variant_manager() -> VariantManager:
@@ -363,7 +381,12 @@ def make_dpd_html(
 
                         # return closest matches
                         else:
-                            dpd_html = find_closest_matches(
+                            context_html = ""
+                            if config_test("dictionary", "context_fallback", "yes"):
+                                context_html = find_context_matches(
+                                    q, headwords_clean_set, ascii_to_unicode_dict
+                                )
+                            dpd_html = context_html + find_closest_matches(
                                 q, headwords_clean_set, ascii_to_unicode_dict
                             )
 
@@ -385,13 +408,23 @@ def make_dpd_html(
 
                         # return closest matches
                         else:
-                            dpd_html = find_closest_matches(
+                            context_html = ""
+                            if config_test("dictionary", "context_fallback", "yes"):
+                                context_html = find_context_matches(
+                                    q, headwords_clean_set, ascii_to_unicode_dict
+                                )
+                            dpd_html = context_html + find_closest_matches(
                                 q, headwords_clean_set, ascii_to_unicode_dict
                             )
 
                     # or finally return closest matches
                     else:
-                        dpd_html = find_closest_matches(
+                        context_html = ""
+                        if config_test("dictionary", "context_fallback", "yes"):
+                            context_html = find_context_matches(
+                                q, headwords_clean_set, ascii_to_unicode_dict
+                            )
+                        dpd_html = context_html + find_closest_matches(
                             q, headwords_clean_set, ascii_to_unicode_dict
                         )
 
@@ -407,12 +440,87 @@ def make_dpd_html(
     raise RuntimeError(f"make_dpd_html exhausted {retries} retries for {q!r}")
 
 
+def find_context_matches(
+    q: str,
+    headwords_clean_set: set[str],
+    ascii_to_unicode_dict: dict[str, list[str]],
+) -> str:
+    """Answer a miss with the texts, when the query carries the word in front of it.
+
+    A query of two or more words is read as `<neighbour> <word>`. Pāḷi joins words by
+    sandhi, so the neighbour is evidence: if the pair is not attested but one of the near
+    spellings is, the correction is not a guess by edit distance but a reading the
+    editions actually carry. Returns "" when there is nothing to say.
+    """
+    tokens = [token for token in q.split() if token]
+    if len(tokens) < 2:
+        return ""
+    word, before = tokens[-1], tokens[-2]
+
+    index = get_context_index()
+    if not index.word_count:
+        return ""
+
+    attested = index.attested_among(
+        word,
+        before,
+        _orthographic_candidates(word, headwords_clean_set, ascii_to_unicode_dict),
+    )
+
+    if index.is_attested(word, before):
+        headlines = index.readings(word, before)
+        detail = "; ".join(str(headline) for headline in headlines[:3])
+        return (
+            f'<h3 class="dpd">attested in the texts:</h3><p>{before} <b>{word}</b> '
+            f"— {detail}</p>"
+        )
+
+    if attested:
+        rows = []
+        for candidate in attested[:5]:
+            headlines = index.readings(candidate, before)
+            origin = headlines[0].provenance if headlines else ""
+            source = headlines[0].source if headlines else ""
+            note = f" ({source}{': ' + origin if origin else ''})" if source else ""
+            rows.append(f"<b>{candidate}</b>{note}")
+        return (
+            f'<h3 class="dpd">not found, but the texts read:</h3><p>{before} '
+            f"{', '.join(rows)}</p>"
+        )
+
+    return ""
+
+
+def _orthographic_candidates(
+    word: str,
+    headwords_clean_set: set[str],
+    ascii_to_unicode_dict: dict[str, list[str]],
+) -> list[str]:
+    """The same suggestions the orthographic fallback would offer, as a plain list.
+
+    The diacritic-insensitive index is keyed by the *folded* word, so the lookup has to
+    fold the query first: `viññana` and `viññāṇa` both fold to `vinnana`, which is what
+    makes the index find a correction that edit distance ranks below longer words.
+    """
+    candidates = list(ascii_to_unicode_dict[unidecode(word)])
+    candidates.extend(
+        item
+        for item in difflib.get_close_matches(
+            word, headwords_clean_set, n=10, cutoff=0.7
+        )
+        if item not in candidates
+    )
+    return candidates
+
+
 def find_closest_matches(
     q,
     headwords_clean_set,
     ascii_to_unicode_dict,
 ) -> str:
-    ascii_matches = ascii_to_unicode_dict[q]
+    # Keyed by the folded word: consulted with the raw query this index never matched a
+    # query that carried diacritics, which is most of them.
+    ascii_matches = ascii_to_unicode_dict[unidecode(q)]
     closest_headword_matches = difflib.get_close_matches(
         q, headwords_clean_set, n=10, cutoff=0.7
     )

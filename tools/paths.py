@@ -681,6 +681,23 @@ class ProjectPaths:
         self.decon_manual_corrections = (
             base_dir / "shared_data/deconstructor/manual_corrections.tsv"
         )
+        self.derivation_rules_path = base_dir / "shared_data/derivation_rules.tsv"
+        self.junction_transform_rules_path = (
+            base_dir / "shared_data/junction_transform_rules.tsv"
+        )
+        self.variant_context_index_path = (
+            base_dir / "shared_data/variant_context_index.tsv"
+        )
+        self.particle_sandhi_rules_path = (
+            base_dir / "shared_data/deconstructor/particle_sandhi_rules.tsv"
+        )
+        # The verdict's precomputed lookups (folded spellings, derivations), built by
+        # `scripts/build/verdict_sources.py`.
+        self.verdict_sources_path = base_dir / "shared_data/verdict_sources.db"
+        # Curated PTS vocabulary from outside the four editions, extracted from the PTS
+        # Saṃyutta Nikāya IV (Feer, revised by Jackson 2014) by the `foureditions`
+        # project's `errata/sn4.py`. Built by `scripts/build/pts_sn4_wordlist.py`.
+        self.pts_sn4_wordlist_path = base_dir / "shared_data/pts_sn4_wordlist.tsv"
         self.sandhi_rules_path = base_dir / "shared_data/deconstructor/sandhi_rules.tsv"
         self.see_path = base_dir / "shared_data/deconstructor/see.tsv"
         self.spelling_mistakes_path = (

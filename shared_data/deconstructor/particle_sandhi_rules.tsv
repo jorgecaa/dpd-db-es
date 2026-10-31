@@ -1,0 +1,202 @@
+base_last	particle	base_tail	surface_tail	count
+a	api	a	āpi	3883
+a	api		mpi	3681
+a	api		pi	2217
+a	api		mapi	72
+a	api		api	6
+ā	api		pi	3104
+ā	api		yapi	462
+ā	api	ā	api	26
+ā	api		mapi	7
+ā	api		api	3
+i	api		pi	1446
+i	api	i	āpi	409
+i	api		mpi	173
+i	api	i	api	36
+i	api	i	īpi	20
+i	api	i	yapi	14
+i	api		dapi	3
+i	api		mapi	3
+ī	api		pi	238
+ī	api	ī	āpi	15
+u	api		pi	755
+u	api	u	vāpi	144
+u	api		mpi	138
+u	api	u	āpi	74
+u	api	u	api	46
+u	api	u	vapi	20
+u	api	u	ūpi	6
+u	api		mapi	3
+ū	api		pi	31
+ū	api	ū	opi	17
+e	api		pi	2419
+e	api	e	āpi	180
+e	api	e	yapi	11
+e	api	e	api	3
+e	api	e	yāpi	3
+o	api		pi	3303
+o	api	o	āpi	1261
+o	api	o	api	428
+o	api	o	vāpi	126
+o	api	o	vapi	3
+d	api		api	3
+ṃ	api	ṃ	mpi	4580
+ṃ	api	aṃ	āpi	1902
+ṃ	api		pi	1777
+ṃ	api	ṃ	pi	572
+ṃ	api	ṃ	mapi	94
+ṃ	api	ṃ	māpi	9
+ṃ	api		api	6
+ṃ	api	iṃ	api	4
+a	iti	a	āti	19873
+a	iti	a	īti	1915
+a	iti	a	eti	1105
+a	iti		miti	182
+a	iti	a	iti	167
+a	iti		ti	154
+a	iti		iti	102
+ā	iti		ti	12456
+ā	iti	ā	īti	518
+ā	iti		iti	49
+ā	iti	ā	iti	45
+ā	iti		miti	22
+ā	iti		titi	6
+i	iti	i	īti	13585
+i	iti		ti	260
+i	iti		iti	25
+i	iti		miti	4
+i	iti		riti	3
+ī	iti		ti	4060
+ī	iti		iti	10
+u	iti	u	ūti	2359
+u	iti	u	iti	75
+u	iti		ti	60
+u	iti		iti	18
+u	iti	u	oti	5
+ū	iti		ti	378
+ū	iti		iti	3
+e	iti		ti	4708
+e	iti		iti	14
+e	iti		miti	5
+o	iti		ti	12510
+o	iti		iti	45
+ṃ	iti	ṃ	nti	16288
+ṃ	iti	aṃ	īti	2207
+ṃ	iti		ti	511
+ṃ	iti	ṃ	miti	209
+ṃ	iti	aṃ	iti	44
+ṃ	iti		iti	24
+ṃ	iti	ṃ	iti	3
+a	iva	a	eva	3032
+a	iva	a	āva	1258
+a	iva		miva	316
+a	iva	a	iva	63
+a	iva	a	īva	21
+a	iva		va	4
+a	iva		iva	3
+ā	iva		va	1803
+ā	iva		riva	21
+ā	iva	ā	īva	21
+ā	iva		miva	14
+ā	iva	ā	iva	9
+ā	iva		iva	3
+i	iva	i	īva	118
+i	iva		va	78
+i	iva		riva	13
+i	iva		miva	7
+ī	iva		va	58
+ī	iva		riva	6
+u	iva		va	16
+u	iva	u	ūva	13
+u	iva	u	iva	12
+u	iva		miva	6
+u	iva		riva	3
+e	iva		va	732
+e	iva		riva	6
+o	iva		va	2337
+o	iva		riva	17
+ṃ	iva		va	549
+ṃ	iva	ṃ	miva	358
+ṃ	iva	aṃ	īva	23
+ṃ	iva	aṃ	iva	9
+a	eva	a	eva	4311
+a	eva		meva	3367
+a	eva		yeva	74
+a	eva		eva	73
+a	eva		va	36
+a	eva		deva	25
+a	eva		reva	10
+ā	eva		va	2117
+ā	eva		yeva	856
+ā	eva	ā	eva	616
+ā	eva		eva	366
+ā	eva		teva	11
+ā	eva		meva	8
+ā	eva		deva	7
+ā	eva		reva	3
+i	eva	i	eva	1000
+i	eva		yeva	978
+i	eva		meva	154
+i	eva		eva	133
+i	eva		deva	25
+i	eva		va	18
+i	eva	i	veva	14
+i	eva		reva	8
+i	eva	ti	cceva	5
+ī	eva		va	118
+ī	eva		yeva	108
+ī	eva		eva	15
+ī	eva		meva	4
+u	eva		yeva	266
+u	eva	u	eva	195
+u	eva	u	veva	134
+u	eva		meva	75
+u	eva		eva	49
+u	eva		deva	4
+ū	eva		va	26
+ū	eva		yeva	8
+ū	eva		eva	3
+e	eva		yeva	999
+e	eva		va	909
+e	eva		eva	132
+e	eva		meva	3
+o	eva		va	2310
+o	eva		yeva	1034
+o	eva	o	eva	368
+o	eva		eva	230
+o	eva	o	veva	89
+t	eva		eva	5
+d	eva		eva	3
+ṃ	eva	ṃ	meva	3808
+ṃ	eva		yeva	1320
+ṃ	eva		va	487
+ṃ	eva	ṃ	ññeva	461
+ṃ	eva	aṃ	eva	449
+ṃ	eva		eva	61
+ṃ	eva	ṃ	eva	6
+ṃ	eva		deva	5
+a	ca		ca	178
+a	ca		cca	26
+ā	ca		ca	242
+i	ca		ca	147
+i	ca		cca	11
+ī	ca		ca	33
+u	ca		ca	75
+u	ca		cca	8
+ū	ca		ca	9
+e	ca		ca	136
+o	ca		ca	253
+ṃ	ca	ṃ	ñca	7309
+ṃ	ca		ca	116
+ṃ	ca	ṃ	ca	5
+a	hi		hi	56
+ā	hi		hi	88
+i	hi		hi	46
+i	hi	ti	cchi	4
+ī	hi		hi	6
+u	hi		hi	17
+e	hi		hi	84
+o	hi		hi	51
+ṃ	hi	ṃ	ñhi	1275
+ṃ	hi	ṃ	mhi	143
+ṃ	hi		hi	36
