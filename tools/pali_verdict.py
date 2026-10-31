@@ -186,6 +186,7 @@ _PALI_CHARACTERS = frozenset(
 # `virodyapi`) whose clusters no lemma happens to contain.
 _is_possible_syllables: Callable[[str], bool] | None
 try:
+    # pyrefly: ignore[missing-import]  # optional local library; absent is handled
     from abugida.phonotactics import (  # pyright: ignore[reportMissingImports]  # optional local library; absent is handled
         is_possible as _possible_syllables,
     )
