@@ -1,8 +1,0 @@
-# binario y objetos
-piloto
-*.o
-# amalgamación de SQLite: 9 MB, no es código de este proyecto
-sqlite3.c
-sqlite3.h
-# artefactos de cargo (la estática son 68 MB)
-minificador/target/
