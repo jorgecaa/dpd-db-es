@@ -120,13 +120,67 @@ Not in the request path: `tools/spanish.py:549` (`preload_combos`) and `:570`
 
 ## Phase 2 — a serving-db build target (the payoff of Phase 1)
 
-- [ ] **2.1** Build step producing `dpd-serve.db`: copy, drop the proven-unread
+- [x] **2.1** Build step producing `dpd-serve.db`: copy, drop the proven-unread
       columns, `VACUUM`, keep `db_info.dpd_release_version`.
       → verify: deterministic (same size on two runs), `integrity_check` ok, version
-      readable, build time recorded (baseline: 67 s for 710 MiB).
-- [ ] **2.2** Point the webapp at it and validate. → verify: oracle identical; the
-      1,000-request soak's memory curve unchanged; page-cache working set reported.
-- [ ] **2.3** Decide whether it ships (spec D2) and record the decision with numbers.
+      readable, build time recorded.
+      **DONE 2026-09-19.** `scripts/build/build_serving_db.py` (recipe: `just
+      serving-db`). The drop list is **imported from `exporter/webapp/toolkit.py`**
+      — the same constants the query sites `defer` — so the build cannot drop a column
+      the running code still selects; it also refuses to build over its own source and
+      aborts if a listed column is missing. Measured: **2180.7 → 1468.8 MiB, 711.9 MiB
+      saved (32.6 %)**, `integrity_check ok`, `version v0.4.20260728`, and the artifact
+      is **byte-identical across runs and across filesystems** (`cmp` on a disk build
+      and a tmpfs build of the same input).
+
+      **The cost is the scratch filesystem, and that is now automatic.** Each
+      `DROP COLUMN` rewrites its whole table (8 × 1.5 GB for `dpd_headwords`), so the
+      first disk-based build took **530 s** and left a 1.5 GB `-wal` behind; the same
+      build with the scratch on tmpfs takes **15.9 s**. The script now sets
+      `journal_mode=OFF` (a rebuildable scratch copy has nothing to protect), uses
+      `VACUUM INTO` so it never needs room for two databases plus a journal, and picks
+      a tmpfs scratch automatically (`/dev/shm`, then `/tmp`, else the destination's
+      directory; `--work-dir` overrides). `just serving-db` now runs in **27 s**.
+- [x] **2.2** Point the webapp at it and validate.
+      → verify: oracle identical; the 1,000-request soak's memory curve unchanged;
+      page-cache working set reported.
+      **DONE 2026-09-19.** Served from `/tmp/dpdserv` on port 8083: golden oracle
+      **130/130 byte-identical**; the deploy-time step
+      (`exporter/webapp/generate_search_index.py`) produces a **byte-identical**
+      2,203,830-byte index from it; the 1,000-request soak ran with **zero non-200**,
+      median **9.5 ms** per request (canonical: 10.3 ms) and **+0.6 % drift** end to end
+      (canonical: +7.5 %), settling at **211.2 MiB** anonymous against the canonical
+      db's 238.8 MiB.
+      **Third dependency found and fixed:** `generate_search_index.py` loaded *whole
+      entities* of 89,280 headwords to read one string per row — the same pattern that
+      Phase 1 removed elsewhere, and the reason that script could not run against a
+      trimmed db at all. Now three column queries: the **same 78,645 terms** (sets
+      compared on the live db) and **34× faster, 7,788 → 227 ms**.
+- [x] **2.3** Decide whether it ships.
+      **DECIDED 2026-09-19 (recommendation, pending the user's confirmation of D2):
+      local build target only, not a release asset.** The artifact is reproducible in
+      27 s from the canonical db, so a host that wants it can build it after installing
+      a release — which is what the updater already does with the repo and `uv` to
+      hand. Shipping it would mean a second ~1.5 GB-per-run CI step and a second asset
+      to keep in step, for a deployment that is inside its memory budget as it stands.
+      Revisit if the server's page cache or disk becomes the constraint.
+
+### Phase 2 — measured, for the record
+
+| Metric | `dpd.db` | `dpd-serve.db` |
+|---|---|---|
+| File size | 2180.7 MiB | **1468.8 MiB** (−32.6 %) |
+| Build time (scratch on tmpfs / on this disk) | — | 15.9 s / 530 s |
+| Golden oracle (130 requests) | reference | identical (`aa63ecff…`) |
+| Search index (deploy step) | 2,203,830 B | byte-identical |
+| 1,000-request soak | +7.5 % drift, 238.8 MiB, 10.3 ms | **+0.6 % drift, 211.2 MiB, 9.5 ms** |
+| Per page read, cold cache (3-page average) | 68.0 MiB | **59.1 MiB** (−13 %) |
+| Anonymous memory after a sweep | ~207 MiB | 206.7 MiB |
+
+The per-page read figures are a *cold-cache* comparison (fresh connection, `_combos`
+cleared before each page) and are indicative rather than precise: they move with cache
+state. The robust results are the size, the identical oracle, the identical index and
+the soak curve.
 
 ## Phase 3 — the elephant: family tables rendered on demand
 

@@ -175,6 +175,8 @@ def prepare_export_to_goldendict_mdict(g: GlobalVars) -> None:
             g.pth.family_word_template_js,
             g.pth.feedback_template_js,
             g.pth.frequency_template_js,
+            g.pth.grammar_by_word_json,
+            g.pth.grammar_by_word_template_js,
             g.pth.main_js_path,
         ],
         gd_path=g.pth.share_dir,

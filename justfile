@@ -19,6 +19,15 @@ initial_build_db:
 generate_components:
     uv run python scripts/bash/generate_components.py
 
+# Build the serving-only database: dpd.db without the columns the webapp never reads
+serving-db:
+    uv run python scripts/build/build_serving_db.py --source dpd.db --dest dpd-serve.db
+
+# Dump every grammatical analysis of every inflected form to JSON and to the
+# dictionary's grammar_by_word_json.js
+grammar-json:
+    uv run python scripts/build/grammar_to_json.py
+
 # Run makedict in a pty (keeps ANSI colours) and save an HTML log; no transcript artifact
 _logged-makedict:
     #!/usr/bin/env bash
@@ -461,3 +470,7 @@ config:
 hotwords:
     fresh /home/bodhirasa/.config/transcribe/hotwords.txt
     transcribe -r
+
+# Is a word Pāḷi? `just verdict añña viññana`, or `just verdict -- -b añña` for flags
+verdict *words:
+    uv run python tools/pali_verdict.py {{words}}

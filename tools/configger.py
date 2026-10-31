@@ -51,6 +51,7 @@ DEFAULT_CONFIG = {
         "show_id": "no",
         "show_tbw": "no",
         "data_limit": "0",
+        "context_fallback": "yes",
     },
     "exporter": {
         "make_dpd": "yes",

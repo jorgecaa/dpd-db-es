@@ -1,0 +1,98 @@
+{
+ "_comment": "Rows captured from lookup (lookup_key, grammar) in dpd.db, plus two synthetic rows for the grammar shapes the live data does not contain (padding to three components, a four-component analysis, an empty or single-token grammar string).",
+ "rows": [
+  [
+   "abbaha",
+   "[[\"abbahati\", \"verb\", \"imp 2nd sg\"], [\"abbahi\", \"verb\", \"reflx aor 1st sg\"]]"
+  ],
+  [
+   "buddhassa",
+   "[[\"buddha\", \"noun\", \"masc dat sg\"], [\"buddha\", \"noun\", \"masc gen sg\"], [\"buddha\", \"pp\", \"masc dat sg\"], [\"buddha\", \"pp\", \"nt dat sg\"], [\"buddha\", \"pp\", \"masc gen sg\"], [\"buddha\", \"pp\", \"nt gen sg\"]]"
+  ],
+  [
+   "buddho",
+   "[[\"buddha\", \"noun\", \"masc nom sg\"], [\"buddha\", \"pp\", \"masc nom sg\"]]"
+  ],
+  [
+   "synthetic-multi",
+   "[[\"x 1\", \"nt\", \"masc nom sg extra\"]]"
+  ],
+  [
+   "synthetic-empty",
+   "[[\"x 2\", \"nt\", \"\"]]"
+  ]
+ ],
+ "expected_triples": {
+  "abbaha": [
+   {
+    "word": "abbahati",
+    "pos": "verb",
+    "grammar": "imp 2nd sg"
+   },
+   {
+    "word": "abbahi",
+    "pos": "verb",
+    "grammar": "reflx aor 1st sg"
+   }
+  ],
+  "buddhassa": [
+   {
+    "word": "buddha",
+    "pos": "noun",
+    "grammar": "masc dat sg"
+   },
+   {
+    "word": "buddha",
+    "pos": "noun",
+    "grammar": "masc gen sg"
+   },
+   {
+    "word": "buddha",
+    "pos": "pp",
+    "grammar": "masc dat sg"
+   },
+   {
+    "word": "buddha",
+    "pos": "pp",
+    "grammar": "nt dat sg"
+   },
+   {
+    "word": "buddha",
+    "pos": "pp",
+    "grammar": "masc gen sg"
+   },
+   {
+    "word": "buddha",
+    "pos": "pp",
+    "grammar": "nt gen sg"
+   }
+  ],
+  "buddho": [
+   {
+    "word": "buddha",
+    "pos": "noun",
+    "grammar": "masc nom sg"
+   },
+   {
+    "word": "buddha",
+    "pos": "pp",
+    "grammar": "masc nom sg"
+   }
+  ],
+  "synthetic-multi": [
+   {
+    "word": "x 1",
+    "pos": "nt",
+    "grammar": "masc nom sg extra"
+   }
+  ],
+  "synthetic-empty": [
+   {
+    "word": "x 2",
+    "pos": "nt",
+    "grammar": ""
+   }
+  ]
+ },
+ "expected_analyses": 12
+}

@@ -215,6 +215,12 @@ class ProjectPaths:
         self.frequency_template_js = (
             base_dir / "exporter/goldendict/javascript/frequency_template.js"
         )
+        self.grammar_by_word_json = (
+            base_dir / "exporter/goldendict/javascript/grammar_by_word_json.js"
+        )
+        self.grammar_by_word_template_js = (
+            base_dir / "exporter/goldendict/javascript/grammar_by_word_template.js"
+        )
         self.main_js_path = base_dir / "exporter/goldendict/javascript/main.js"
         self.sorter_js_path = base_dir / "exporter/goldendict/javascript/sorter.js"
 
@@ -671,6 +677,9 @@ class ProjectPaths:
         # shared_data
         self.changed_headwords_path = base_dir / "shared_data/changed_headwords"
         self.corrections_tsv_path = base_dir / "shared_data/corrections.tsv"
+        self.grammar_by_word_json_path = (
+            base_dir / "shared_data/grammar/grammar_by_word.json"
+        )
         self.headword_stem_pattern_dict_path = (
             base_dir / "shared_data/headword_stem_pattern_dict"
         )
@@ -696,6 +705,23 @@ class ProjectPaths:
         self.decon_manual_corrections = (
             base_dir / "shared_data/deconstructor/manual_corrections.tsv"
         )
+        self.derivation_rules_path = base_dir / "shared_data/derivation_rules.tsv"
+        self.junction_transform_rules_path = (
+            base_dir / "shared_data/junction_transform_rules.tsv"
+        )
+        self.variant_context_index_path = (
+            base_dir / "shared_data/variant_context_index.tsv"
+        )
+        self.particle_sandhi_rules_path = (
+            base_dir / "shared_data/deconstructor/particle_sandhi_rules.tsv"
+        )
+        # The verdict's precomputed lookups (folded spellings, derivations), built by
+        # `scripts/build/verdict_sources.py`.
+        self.verdict_sources_path = base_dir / "shared_data/verdict_sources.db"
+        # Curated PTS vocabulary from outside the four editions, extracted from the PTS
+        # Saṃyutta Nikāya IV (Feer, revised by Jackson 2014) by the `foureditions`
+        # project's `errata/sn4.py`. Built by `scripts/build/pts_sn4_wordlist.py`.
+        self.pts_sn4_wordlist_path = base_dir / "shared_data/pts_sn4_wordlist.tsv"
         self.sandhi_rules_path = base_dir / "shared_data/deconstructor/sandhi_rules.tsv"
         self.see_path = base_dir / "shared_data/deconstructor/see.tsv"
         self.spelling_mistakes_path = (
