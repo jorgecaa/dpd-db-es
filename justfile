@@ -470,7 +470,3 @@ config:
 hotwords:
     fresh /home/bodhirasa/.config/transcribe/hotwords.txt
     transcribe -r
-
-# Is a word Pāḷi? `just verdict añña viññana`, or `just verdict -- -b añña` for flags
-verdict *words:
-    uv run python tools/pali_verdict.py {{words}}

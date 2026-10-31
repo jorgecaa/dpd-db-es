@@ -35,10 +35,6 @@ COMMANDS: list[str] = [
     #
     "go run go_modules/deconstructor/main.go",
     "scripts/build/deconstructor_output_add_to_db.py",
-    "scripts/build/particle_sandhi_rules.py",
-    "scripts/build/derivation_rules.py",
-    "scripts/build/junction_transform_rules.py",
-    "scripts/build/variant_context_index.py",
     #
     "scripts/build/api_ca_eva_iti_iva_hi.py",
     #
@@ -64,10 +60,6 @@ COMMANDS: list[str] = [
     "db/epd/epd_to_lookup.py",
     #
     "scripts/build/decon_cache_update.py",
-    #
-    # The verdict's own lookups (folded spellings, derivations, spelling -> lemma), read from
-    # dpd.db once the headwords and the index are final. Gitignored, like every *.db.
-    "scripts/build/verdict_sources.py",
     #
     "exporter/webapp/generate_search_index.py",
     #

@@ -152,7 +152,6 @@ scripts/suttas/*/*.tsv
 shared_data/changed_headwords
 shared_data/changed_templates
 shared_data/frequency/*.json
-shared_data/variant_context_index.tsv
 shared_data/grammar
 shared_data/headword_stem_pattern_dict
 temp/
