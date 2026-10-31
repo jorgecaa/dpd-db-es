@@ -36,12 +36,17 @@
             as="script">
         <link href="frequency_template.js" class="load_js" rel="preload"
             as="script">
+        <link href="grammar_by_word_json.js" class="load_js" rel="preload"
+            as="script">
+        <link href="grammar_by_word_template.js" class="load_js" rel="preload"
+            as="script">
         <link href="main.js" class="load_js" rel="preload" as="script">
 
         <script>
         var data_{{ d.i.lemma_1_ }} = {
             "id": {{ d.i.id }},
             "lemma": "{{ d.i.lemma_1 }}",
+            "lemma_clean": "{{ d.i.lemma_clean }}",
             "date": "{{ d.date }}",
             "family_root": "{{ d.i.root_family_key }}",
             

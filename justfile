@@ -23,6 +23,11 @@ generate_components:
 serving-db:
     uv run python scripts/build/build_serving_db.py --source dpd.db --dest dpd-serve.db
 
+# Dump every grammatical analysis of every inflected form to JSON and to the
+# dictionary's grammar_by_word_json.js
+grammar-json:
+    uv run python scripts/build/grammar_to_json.py
+
 # Run makedict in a pty (keeps ANSI colours) and save an HTML log; no transcript artifact
 _logged-makedict:
     #!/usr/bin/env bash
