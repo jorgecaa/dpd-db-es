@@ -6,7 +6,6 @@ import unicodedata
 
 from db.db_helpers import get_db_session
 from db.models import DpdHeadword, DpdRoot, FamilyRoot
-from exporter.webapp.preloads import clean_lemma
 from tools.configger import config_read
 from tools.paths import ProjectPaths
 from tools.printer import printer as pr
@@ -53,28 +52,25 @@ def main() -> None:
 
     terms = set()
 
-    # Columns, not entities. Loading 89,280 whole rows to read one string per row is the
-    # pattern this project has had to fix in the preloads and the family lookup, and it
-    # is also what makes this script unusable against `dpd-serve.db`, where the columns
-    # it does not need no longer exist.
+    # Aggregate Headwords
     pr.green_tmr("fetching headwords")
-    headword_lemmas = db_sess.query(DpdHeadword.lemma_1).all()
-    for (lemma_1,) in headword_lemmas:
-        terms.add(clean_lemma(lemma_1))
-    pr.yes(len(headword_lemmas))
+    headwords = db_sess.query(DpdHeadword).all()
+    for hw in headwords:
+        terms.add(hw.lemma_clean)
+    pr.yes(len(headwords))
 
     # Aggregate Roots
     pr.green_tmr("fetching roots")
-    roots = db_sess.query(DpdRoot.root).all()
-    for (root,) in roots:
-        terms.add(clean_lemma(root))
+    roots = db_sess.query(DpdRoot).all()
+    for rt in roots:
+        terms.add(rt.root_clean)
     pr.yes(len(roots))
 
     # Aggregate Root Families
     pr.green_tmr("fetching root families")
-    families = db_sess.query(FamilyRoot.root_family).all()
-    for (root_family,) in families:
-        terms.add(root_family)
+    families = db_sess.query(FamilyRoot).all()
+    for fam in families:
+        terms.add(fam.root_family)
     pr.yes(len(families))
 
     # Build index

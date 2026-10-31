@@ -1,12 +1,9 @@
 import difflib
 import re
 import time
-from functools import lru_cache
-from pathlib import Path
 
-from sqlalchemy import func, literal, or_, select, text
+from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Session, defer
 
 from db.db_helpers import get_db_session
 from db.models import DpdHeadword, DpdRoot, FamilyRoot, Lookup
@@ -36,141 +33,12 @@ from tools.variants_manager import VariantManager
 
 _variant_manager: VariantManager | None = None
 
-# Columns this webapp never reads. They are `defer`red rather than merely unread, so a
-# serving-only build of the database can drop them: an ORM entity load selects every
-# column the model declares, and a trimmed db without them fails with "no such column"
-# (measured 2026-09-18: dropping them broke 125 of 130 golden-oracle responses).
-# `kamma/threads/20260918_serving_db_diet/` has the size figures and the design.
-_UNREAD_HEADWORD_COLUMNS = (
-    "freq_data",
-    "inflections_sinhala",
-    "inflections_thai",
-    "inflections_devanagari",
-    "inflections",
-    "inflections_api_ca_eva_iti",
-    "created_at",
-    "updated_at",
-)
-_UNREAD_LOOKUP_COLUMNS = ("sinhala", "thai", "devanagari", "rpd", "other")
-
-_DEFER_HEADWORD = tuple(
-    defer(getattr(DpdHeadword, name)) for name in _UNREAD_HEADWORD_COLUMNS
-)
-_DEFER_LOOKUP = tuple(defer(getattr(Lookup, name)) for name in _UNREAD_LOOKUP_COLUMNS)
-
 
 def get_variant_manager() -> VariantManager:
     global _variant_manager
     if _variant_manager is None:
         _variant_manager = VariantManager()
     return _variant_manager
-
-
-@lru_cache(maxsize=1)
-def lookup_key_variants(db_path: Path) -> dict[str, tuple[str, ...]]:
-    """Cached `lookup_key_variant_rows` for a database path.
-
-    Costs ~1 s once per process; `exporter/webapp/main.py` warms it at startup so
-    no request pays it.
-    """
-    with get_db_session(db_path) as session:
-        return lookup_key_variant_rows(session)
-
-
-def lookup_key_variant_rows(db_session: Session) -> dict[str, tuple[str, ...]]:
-    """Folded `lookup_key` -> its stored spellings, for keys stored more than once.
-
-    Only 181 of 1,281,569 keys are stored under more than one ASCII case spelling
-    (`buddha` / `Buddha`), and some spellings cannot be derived by folding the
-    user's input (`ana` / `ANa`). The search probe needs the exact spellings to be
-    both fast and complete: probing the primary-key index measured **0.017 ms**
-    against **519.8 ms** for the scan the old predicate forced, with 419 MB of
-    pages read per search.
-
-    Keyed by both SQLite's fold and Python's (`str.lower`), because the callers
-    fold in Python.
-    """
-    inner = (
-        select(Lookup.lookup_key, func.lower(Lookup.lookup_key).label("folded"))
-        .distinct()
-        .subquery()
-    )
-    statement = (
-        select(inner.c.folded, func.group_concat(inner.c.lookup_key, literal("\x1f")))
-        .group_by(inner.c.folded)
-        .having(func.count() > 1)
-    )
-    variants: dict[str, tuple[str, ...]] = {}
-    for folded, joined in db_session.execute(statement).all():
-        spellings = tuple(joined.split("\x1f"))
-        variants[folded] = spellings
-        for spelling in spellings:
-            variants[spelling.lower()] = spellings
-    return variants
-
-
-def probe_keys(q: str, variants: dict[str, tuple[str, ...]]) -> list[str]:
-    """The `lookup_key` spellings to probe for a user-typed `q`.
-
-    SQLite's `LIKE` folds ASCII case, so the old scan matched any spelling of the
-    same letters. These are the spellings users produce (as typed, all lower, all
-    upper, sentence case, title case) plus the stored spellings the data actually
-    has, each with the trailing dot the old query also matched.
-    """
-    forms = {q, q.lower(), q.upper(), q.capitalize(), q.title()}
-    forms.update(variants.get(q.lower(), ()))
-    return sorted({form + suffix for form in forms if form for suffix in ("", ".")})
-
-
-def lookup_rows(
-    db_session: Session, q: str, variants: dict[str, tuple[str, ...]]
-) -> list[Lookup]:
-    """Rows of `lookup` for `q`, through the primary-key index.
-
-    Probing is complete because the candidate spellings include every stored
-    spelling of the key: measured on 2026-09-18, 18 of 18 probe cases — including
-    the ambiguous keys and the trailing-dot ones — returned exactly the rows the old
-    predicate returned. If nothing matched, the old predicate still runs as a safety
-    net, but reading the covering index rather than the whole table (373 ms / 36 MB
-    instead of 513 ms / 419 MB), and only then fetching the matched rows by key.
-    Either way the result is the same, ordered by rowid as the old scan produced it.
-    """
-    rows = (
-        db_session.query(Lookup)
-        .options(*_DEFER_LOOKUP)
-        .filter(Lookup.lookup_key.in_(probe_keys(q, variants)))
-        .order_by(text("lookup.rowid"))
-        .all()
-    )
-    if rows:
-        return rows
-
-    # LIKE is only for case-insensitivity: escape % and _ so a query like "%"
-    # matches itself, not every row
-    q_like = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-    matched_keys = [
-        key
-        for (key,) in db_session.query(Lookup.lookup_key)
-        .filter(
-            or_(
-                func.lower(Lookup.lookup_key).like(func.lower(q_like), escape="\\"),
-                func.lower(Lookup.lookup_key).like(
-                    func.lower(q_like + "."), escape="\\"
-                ),
-            )
-        )
-        .all()
-    ]
-    if not matched_keys:
-        return []
-
-    return (
-        db_session.query(Lookup)
-        .options(*_DEFER_LOOKUP)
-        .filter(Lookup.lookup_key.in_(matched_keys))
-        .order_by(text("lookup.rowid"))
-        .all()
-    )
 
 
 LICENSE_URL: str = "https://creativecommons.org/licenses/by-nc-sa/4.0/"
@@ -231,8 +99,20 @@ def make_dpd_html(
                     only_suggestions = False
                     q = q.replace("'", "").replace("ṁ", "ṃ").strip()
 
-                    lookup_results = lookup_rows(
-                        db_session, q, lookup_key_variants(pth.dpd_db_path)
+                    # ilike is only for case-insensitivity: escape % and _ so a
+                    # query like "%" matches itself, not every row
+                    q_like = (
+                        q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                    )
+                    lookup_results = (
+                        db_session.query(Lookup)
+                        .filter(
+                            or_(
+                                Lookup.lookup_key.ilike(q_like, escape="\\"),
+                                Lookup.lookup_key.ilike(q_like + ".", escape="\\"),
+                            )
+                        )
+                        .all()
                     )
 
                     # Check manual variants from TSV first
@@ -256,7 +136,6 @@ def make_dpd_html(
                                 headwords = lookup_result.headwords_unpack
                                 headword_results = (
                                     db_session.query(DpdHeadword)
-                                    .options(*_DEFER_HEADWORD)
                                     .filter(DpdHeadword.id.in_(headwords))
                                     .all()
                                 )
@@ -396,7 +275,6 @@ def make_dpd_html(
                         # is never an id, and would overflow the query
                         headword_result = (
                             db_session.query(DpdHeadword)
-                            .options(*_DEFER_HEADWORD)
                             .filter(DpdHeadword.id == int(q))
                             .first()
                             if len(q) <= 18
@@ -421,7 +299,6 @@ def make_dpd_html(
                     elif re.search(r"\s\d", q):  # eg "kata 5"
                         headword_result = (
                             db_session.query(DpdHeadword)
-                            .options(*_DEFER_HEADWORD)
                             .filter(DpdHeadword.lemma_1 == q)
                             .first()
                         )
