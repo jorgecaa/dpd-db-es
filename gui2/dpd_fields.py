@@ -31,6 +31,7 @@ from gui2.dpd_fields_notes import DpdNotesField
 from gui2.mixins import PopUpMixin
 from gui2.toolkit import ToolKit
 from gui2.ui_utils import is_mounted, request_focus
+from tools import spanish
 from tools.compound_type_manager import CompoundTypeManager
 from tools.phonetic_change_manager import PhoneticChangeManager
 from tools.fuzzy_tools import find_closest_matches
@@ -537,7 +538,7 @@ class DpdFields(PopUpMixin):
     def update_db_fields(self, headword: DpdHeadword) -> None:
         """Update the left hand side fields with headword data."""
 
-        headword_dict = vars(headword)
+        headword_dict = spanish.instance_fields(headword)
 
         for key, value in headword_dict.items():
             if key in self.fields:

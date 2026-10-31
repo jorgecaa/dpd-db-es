@@ -24,7 +24,9 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy import inspect as sa_inspect
 
 from tools.configger import config_read
 
@@ -140,6 +142,35 @@ def suppressed() -> Iterator[None]:
         yield
     finally:
         _local.suppressed = previous
+
+
+def instance_fields(obj: object) -> dict[str, Any]:
+    """`vars(obj)` keyed the way the rest of the code expects: by column name.
+
+    The overlay maps `meaning_1`, `meaning_lit`, `meaning_2` and `root_meaning` to
+    private attributes (`_meaning_1` …) so that reading them can return Spanish.
+    Code that walks `vars()` and drops the `_` keys therefore drops those columns
+    too: gui2 left the meanings out of the edit form, the save and the contributor
+    JSON. This returns the public keys plus those private columns under their
+    column names. The values are the stored ones, never the overlay's, so what
+    is written back is the English.
+
+    Objects that are not mapped behave exactly like the old filter.
+    """
+    mapper = sa_inspect(type(obj), raiseerr=False)
+    renamed: dict[str, str] = {}
+    if mapper is not None:
+        for prop in mapper.column_attrs:
+            column_name = prop.columns[0].name
+            if prop.key != column_name:
+                renamed[prop.key] = column_name
+    fields: dict[str, Any] = {}
+    for key, value in vars(obj).items():
+        if key in renamed:
+            fields[renamed[key]] = value
+        elif not key.startswith("_"):
+            fields[key] = value
+    return fields
 
 
 def _read_table(

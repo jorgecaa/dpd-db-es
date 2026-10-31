@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+from tools import spanish
 from tools.contrib_entry import entry_hash
 from tools.printer import printer as pr
 
@@ -73,7 +74,7 @@ class AdditionsManager:
         self._save_dict(self.additions_dict)
 
     def add_additions(self, word: DpdHeadword, comment: str) -> None:
-        word_dict = {k: v for k, v in vars(word).items() if not k.startswith("_")}
+        word_dict = spanish.instance_fields(word)
         word_dict["comment"] = comment
         # Key = "{username}_{id}": unique across contributors (username) and
         # stable per word (id + dedup), so re-saving the same word overwrites

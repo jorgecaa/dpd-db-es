@@ -874,8 +874,8 @@ class DatabaseManager:
             existing = self.db_session.query(DpdHeadword).filter_by(id=word.id).first()
             if existing:
                 # Update all fields from the edited word
-                for key, value in word.__dict__.items():
-                    if not key.startswith("_") and key != "id":
+                for key, value in spanish.instance_fields(word).items():
+                    if key != "id":
                         setattr(existing, key, value)
                 self.db_session.commit()
                 self.mark_corpus_stale()

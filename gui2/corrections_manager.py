@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from db.models import DpdHeadword
+from tools import spanish
 from tools.contrib_entry import entry_hash
 from tools.printer import printer as pr
 
@@ -74,7 +75,7 @@ class CorrectionsManager:
     def update_corrections(
         self, word: DpdHeadword, comment: str, changed: list[str] | None = None
     ) -> None:
-        word_dict = {k: v for k, v in vars(word).items() if not k.startswith("_")}
+        word_dict = spanish.instance_fields(word)
         word_dict["comment"] = comment
         if changed is not None:
             # Which columns differ from the db row, so the reviewer can see
