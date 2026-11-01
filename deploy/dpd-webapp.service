@@ -1,0 +1,43 @@
+[Unit]
+Description=DPD WebApp - Digital Pāḷi Dictionary (uvicorn)
+Documentation=https://github.com/digitalpalidictionary/dpd-db
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jorge
+Group=jorge
+WorkingDirectory=/home/jorge/Code/dpd-db
+Environment="PATH=/usr/local/bin:/usr/bin:/bin:/home/jorge/.local/bin"
+Environment="HOME=/home/jorge"
+
+ExecStart=/usr/local/bin/uv run uvicorn exporter.webapp.main:app --host 127.0.0.1 --port 8080
+
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=dpd-webapp
+
+# Guardrail from the 2026-09-18 memory work: measured 124 MiB anonymous idle and
+# 239 MiB at steady state, budget 260 MiB. MemoryHigh throttles well above that,
+# MemoryMax kills a runaway instead of letting it starve the machine.
+MemoryHigh=512M
+MemoryMax=1G
+
+# Security hardening (SELinux-compatible)
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/jorge/Code/dpd-db /home/jorge/.cache /home/jorge/.local/share/uv
+
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+
+[Install]
+WantedBy=multi-user.target

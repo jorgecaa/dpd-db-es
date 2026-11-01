@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# preload-db.sh — deja dpd.db servido desde RAM antes de arrancar el webapp.
+#
+# Lo ejecuta dpd-webapp.service como ExecStartPre. El contrato de rutas es el
+# mismo que da por supuesto /usr/local/bin/dpd-update.sh:
+#
+#   dpd.db        ruta canónica; tras este script es un enlace → RAM
+#   dpd.db.disk   la copia real en disco, guardada aparte mientras dure
+#   /dev/shm/dpd.db   la copia en memoria que sirve el webapp
+#
+# La copia a RAM se hace ANTES de mover nada: si falla (sin espacio, disco
+# ilegible), el árbol se queda exactamente como estaba y el arranque aborta.
+set -euo pipefail
+
+REPO_DIR="/home/jorge/Code/dpd-db"
+DB_DISK="${REPO_DIR}/dpd.db"
+DB_BACKUP="${REPO_DIR}/dpd.db.disk"
+DB_RAM="/dev/shm/dpd.db"
+
+log() { echo "[preload-db] $*"; }
+die() { echo "[preload-db] ERROR: $*" >&2; exit 1; }
+
+# ── 1. Localizar la copia real ──────────────────────────────────────────────
+# Puede estar en su sitio (arranque normal) o en el respaldo (parada sucia
+# anterior, que dejó el enlace puesto sin restaurar).
+if [[ -L "$DB_DISK" ]]; then
+  if [[ -f "$DB_RAM" && -s "$DB_RAM" && -f "$DB_BACKUP" ]] &&
+     [[ "$(stat -c %s "$DB_RAM")" == "$(stat -c %s "$DB_BACKUP")" ]]; then
+    log "ya está en RAM y coincide con el respaldo; nada que hacer"
+    exit 0
+  fi
+  log "enlace de una ejecución anterior; se rehace desde el respaldo"
+  rm -f "$DB_DISK"
+  [[ -f "$DB_BACKUP" ]] || die "no hay ni base en disco ni respaldo que cargar"
+  mv "$DB_BACKUP" "$DB_DISK"
+fi
+
+[[ -f "$DB_DISK" ]] || die "no existe $DB_DISK"
+
+# ── 2. Copiar a RAM ─────────────────────────────────────────────────────────
+# Al archivo temporal primero, para que nadie vea una copia a medias en la
+# ruta definitiva.
+SIZE="$(stat -c %s "$DB_DISK")"
+log "copiando $((SIZE / 1024 / 1024)) MB a $DB_RAM ..."
+rm -f "$DB_RAM"
+cp "$DB_DISK" "${DB_RAM}.parcial" || die "falló la copia a RAM"
+[[ "$(stat -c %s "${DB_RAM}.parcial")" == "$SIZE" ]] ||
+  die "la copia en RAM no tiene el tamaño del original"
+mv "${DB_RAM}.parcial" "$DB_RAM"
+
+# ── 3. Conmutar la ruta canónica ────────────────────────────────────────────
+mv "$DB_DISK" "$DB_BACKUP"
+ln -s "$DB_RAM" "$DB_DISK"
+
+log "listo: dpd.db → $DB_RAM (respaldo en $DB_BACKUP)"
